@@ -7,6 +7,7 @@ import { ThemedView } from "./ThemedView";
 export const Search = () => {
   const backgroundColor = useThemeColor({}, "background.1");
   const textColor = useThemeColor({}, "text");
+  const iconColor = useThemeColor({}, "text.3");
   return (
     <View style={[styles.container, { backgroundColor }]}>
       <View style={styles.icon}>
@@ -18,8 +19,8 @@ export const Search = () => {
         style={[styles.input, { color: textColor }]}
       />
       <TouchableOpacity>
-        <ThemedView colorName="background.2" style={styles.leftContainer}>
-          <Feather name="filter" size={16} color={textColor} />
+        <ThemedView colorName="background" style={styles.leftContainer}>
+          <Feather name="filter" size={16} color={iconColor} />
         </ThemedView>
       </TouchableOpacity>
     </View>
@@ -31,7 +32,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 8,
     borderRadius: 8,
     paddingHorizontal: 8,
     height: 48,
@@ -42,11 +42,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
-   
   },
   input: {
     flex: 1,
-   
   },
   leftContainer: {
     width: 32,
