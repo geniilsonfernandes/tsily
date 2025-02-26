@@ -1,4 +1,7 @@
+import { QuantitySelector } from "@/components/QuantitySelector";
 import { ThemedView } from "@/components/ThemedView";
+import { ValueInput } from "@/components/ValueInput";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams } from "expo-router";
@@ -15,8 +18,14 @@ import {
 } from "react-native";
 
 export default function List() {
+  const [product, setProduct] = useState("");
   const [quantity, setQuantity] = useState("");
   const [showOptions, setShowOptions] = useState(false);
+
+  const backgroundColor = useThemeColor({}, "background.5");
+  const iconColor = useThemeColor({}, "text.3");
+  const textColor = useThemeColor({}, "text");
+
   const { id } = useLocalSearchParams();
 
   const handleChangeQuantity = (
@@ -48,6 +57,13 @@ export default function List() {
       keyboardDidHideListener.remove();
     };
   }, []);
+  const data = [
+    { id: "1", name: "Item 1" },
+    { id: "2", name: "Item 2" },
+    { id: "3", name: "Item 3" },
+    { id: "4", name: "Item 4" },
+    { id: "5", name: "Item 5" },
+  ];
 
   return (
     <View style={styles.container}>
@@ -64,141 +80,63 @@ export default function List() {
           <Text>lista</Text>
         </View>
       </View>
-      <View style={styles.createContainer}>
-        <View style={styles.createButton}>
+      <ThemedView style={styles.createContainer}>
+        <ThemedView colorName="background.1" style={styles.createSheet}>
           <View style={styles.input}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 2,
-                flex: 1,
-              }}
-            >
-              <TextInput placeholder="Arroz japones" style={{ flex: 1 }} />
+            <View style={styles.inputContainer}>
+              <TextInput
+                placeholder="Arroz japones"
+                value={product}
+                onChangeText={(value) => setProduct(value)}
+                style={{ flex: 1, color: textColor }}
+                placeholderTextColor={textColor}
+              />
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.selectionAsync();
-              }}
-              style={{
-                padding: 8,
-              }}
-            >
-              <Feather name="chevron-up" size={18} color="#868686" />
-            </TouchableOpacity>
+            {!product && (
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.selectionAsync();
+                }}
+                style={{
+                  padding: 8,
+                }}
+              >
+                <Feather name="chevron-up" size={18} color={iconColor} />
+              </TouchableOpacity>
+            )}
+            {product && (
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.selectionAsync();
+                }}
+                style={{
+                  padding: 8,
+                }}
+              >
+                <Feather name="check" size={16} color={iconColor} />
+              </TouchableOpacity>
+            )}
           </View>
           {showOptions && (
             <>
               <ThemedView
+                colorName="background.2"
                 style={{
                   height: 1,
-                  marginVertical: 4,
-                  opacity: 0.4,
-                  backgroundColor: "#E6E6E6",
+                  marginVertical: 6,
                 }}
               />
-              <View
-                style={{
-                  flexDirection: "row",
-                  gap: 8,
-                  justifyContent: "space-between",
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    flex: 1,
-                    borderRadius: 8,
-                    paddingHorizontal: 8,
-                    backgroundColor: "#fff",
-                    borderColor: "#E6E6E6",
-                    borderWidth: 1,
-                  }}
-                >
-                  <Feather name="dollar-sign" size={18} color="#868686" />
-                  <TextInput
-                    placeholder="valor"
-                    style={{ flex: 1 }}
-                    keyboardType="numeric"
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                    textContentType="none"
-                    autoComplete="off"
-                  />
-                </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    width: 100,
-                    borderRadius: 8,
-                    paddingHorizontal: 8,
-                    backgroundColor: "#fff",
-                    borderColor: "#E6E6E6",
-                    borderWidth: 1,
-                  }}
-                >
-                  <Feather name="shopping-bag" size={18} color="#868686" />
-                  <TextInput
-                    placeholder="quant."
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                    textContentType="none"
-                    autoComplete="off"
-                    style={{ flex: 1 }}
-                    value={quantity.toString()}
-                    onChange={handleChangeQuantity}
-                    keyboardType="numeric"
-                  />
-                </View>
-                <TouchableOpacity
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: 8,
-                    width: 42,
-                    borderRadius: 8,
-                    paddingHorizontal: 8,
-                    backgroundColor: "#fff",
-                  }}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    if (+quantity > 0) {
-                      const newQuantity = +quantity - 1;
-                      setQuantity(newQuantity.toString());
-                    }
-                  }}
-                >
-                  <Feather name="minus-square" size={18} color="#868686" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: 8,
-                    width: 42,
-                    borderRadius: 8,
-                    paddingHorizontal: 8,
-                    backgroundColor: "#fff",
-                  }}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setQuantity(String(+quantity + 1));
-                  }}
-                >
-                  <Feather name="plus-square" size={18} color="#868686" />
-                </TouchableOpacity>
+              <View style={styles.optionsContainer}>
+                <ValueInput />
+                <QuantitySelector
+                  quantity={quantity}
+                  setQuantity={setQuantity}
+                />
               </View>
             </>
           )}
-        </View>
-      </View>
+        </ThemedView>
+      </ThemedView>
     </View>
   );
 }
@@ -206,8 +144,6 @@ export default function List() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-
-    backgroundColor: "#FFF",
   },
   createContainer: {
     padding: 8,
@@ -215,17 +151,26 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: "100%",
   },
-  createButton: {
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    flex: 1,
+  },
+  createSheet: {
     width: "100%",
-
-    backgroundColor: "#F5F5F5",
-
     padding: 8,
-    borderRadius: 8,
+    borderRadius: 16,
   },
   input: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+
+  optionsContainer: {
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "space-between",
   },
 });
