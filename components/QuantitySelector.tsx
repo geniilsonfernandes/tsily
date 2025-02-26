@@ -12,9 +12,9 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   quantity,
   setQuantity,
 }) => {
-    const backgroundColor = useThemeColor({}, "background");
-    const iconColor = useThemeColor({}, "text.3");
-    const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
+  const iconColor = useThemeColor({}, "text.3");
+  const textColor = useThemeColor({}, "text");
   const handleDecrease = () => {
     Haptics.selectionAsync();
     if (+quantity > 0) {
@@ -28,7 +28,7 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   };
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View style={styles.constainer}>
       <View style={[styles.input, { backgroundColor }]}>
         <Feather name="shopping-bag" size={18} color={iconColor} />
         <TextInput
@@ -47,27 +47,35 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         style={[styles.button, { backgroundColor }]}
         onPress={handleDecrease}
       >
-        <Feather name="minus-square" size={18} color={iconColor} />
+        <Feather name="minus" size={18} color={iconColor} />
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.button, { backgroundColor }]}
         onPress={handleIncrease}
       >
-        <Feather name="plus-square" size={18} color={iconColor} />
+        <Feather name="plus" size={18} color={iconColor} />
       </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  constainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   input: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     width: 100,
     borderRadius: 10,
+    height: 42,
     paddingHorizontal: 8,
     backgroundColor: "#5B5B5B",
+    borderColor: "#DBDBDB",
+    borderWidth: 1,
   },
   button: {
     flexDirection: "row",
@@ -76,7 +84,7 @@ const styles = StyleSheet.create({
     gap: 8,
     width: 42,
     height: 42,
-    borderRadius: 10,
+    borderRadius: 100,
     paddingHorizontal: 8,
     backgroundColor: "#5B5B5B",
   },
