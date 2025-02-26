@@ -29,9 +29,7 @@ export default function HomeScreen() {
           <ThemedText type="title">Tsily</ThemedText>
           <View style={styles.avatar} />
         </View>
-        <Link href={`/list/2113`}>
-          <ThemedText type="link">Crie uma nova lista</ThemedText>
-        </Link>
+
         <Search />
         {/* <LinearGradient
           // Background Linear Gradient

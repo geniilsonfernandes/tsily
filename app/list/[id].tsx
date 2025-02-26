@@ -1,142 +1,169 @@
-import { QuantitySelector } from "@/components/QuantitySelector";
+import { data, ProductEntry } from "@/components/ProductEntry";
+import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { ValueInput } from "@/components/ValueInput";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
-import {
-  Keyboard,
-  NativeSyntheticEvent,
-  StyleSheet,
-  Text,
-  TextInput,
-  TextInputChangeEventData,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import React, { memo, useCallback, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  SharedValue,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
-export default function List() {
-  const [product, setProduct] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [showOptions, setShowOptions] = useState(false);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-  const backgroundColor = useThemeColor({}, "background.5");
-  const iconColor = useThemeColor({}, "text.3");
-  const textColor = useThemeColor({}, "text");
+const RightActions = (
+  progress: SharedValue<number>,
+  dragX: SharedValue<number>
+) => {
+  return (
+    <Animated.View style={[styles.action, { backgroundColor: "#e85656" }]}>
+      <Feather
+        name="trash-2"
+        size={16}
+        color="#fff"
+        style={{
+          position: "absolute",
+          right: 10,
+        }}
+      />
+      <Text style={styles.actionText}>Excluir</Text>
+    </Animated.View>
+  );
+};
 
-  const { id } = useLocalSearchParams();
+const ListItem = memo(({ name }: { name: string }) => {
+  const [checked, setChecked] = useState(false);
 
-  const handleChangeQuantity = (
-    e: NativeSyntheticEvent<TextInputChangeEventData>
-  ) => {
-    const NewQuantity = e.nativeEvent.text;
-    const MAX_DIGITS = 5;
+  const borderRadius = useSharedValue(12); // Valor inicial do borderRadius
+  const backgroundColor = useSharedValue("transparent");
+  const borderColor = useSharedValue("#DEDEDE");
 
-    if (NewQuantity.length === MAX_DIGITS) {
-      return;
+  const animatedStyle = useAnimatedStyle(() => ({
+    borderRadius: withSpring(borderRadius.value, {
+      damping: 10,
+      stiffness: 100,
+    }),
+    backgroundColor: withSpring(backgroundColor.value, {
+      damping: 10,
+      stiffness: 100,
+    }),
+    borderColor: withSpring(borderColor.value, {
+      damping: 10,
+      stiffness: 100,
+    }),
+  }));
+
+  const handlePressIn = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+    setChecked(!checked);
+    if (checked) {
+      backgroundColor.value = "transparent";
+      borderColor.value = "#DEDEDE";
+    } else {
+      backgroundColor.value = "#7faf76";
+      borderColor.value = "#7faf76";
     }
-
-    setQuantity(NewQuantity);
+    borderRadius.value = 8; // Altera o borderRadius durante o press
   };
 
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      "keyboardDidShow",
-      () => setShowOptions(true)
-    );
+  const handlePressOut = () => {
+    borderRadius.value = 12; // Volta ao borderRadius original
+  };
 
-    const keyboardDidHideListener = Keyboard.addListener(
-      "keyboardDidHide",
-      () => setShowOptions(false)
-    );
+  return (
+    <ReanimatedSwipeable
+      renderRightActions={RightActions}
+      friction={2}
+      rightThreshold={200}
+    >
+      <ThemedView style={styles.item}>
+        <AnimatedPressable
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={[styles.button, animatedStyle]}
+        >
+          {checked && (
+            <Animated.View
+              entering={FadeIn.duration(300).easing(Easing.inOut(Easing.quad))}
+              exiting={FadeOut.duration(300).easing(Easing.inOut(Easing.quad))}
+            >
+              <Feather name="check" size={16} color="#fff" />
+            </Animated.View>
+          )}
+        </AnimatedPressable>
 
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
-  const data = [
-    { id: "1", name: "Item 1" },
-    { id: "2", name: "Item 2" },
-    { id: "3", name: "Item 3" },
-    { id: "4", name: "Item 4" },
-    { id: "5", name: "Item 5" },
-  ];
+        <View style={styles.itemContent}>
+          <ThemedText
+            colorName="text.1"
+            type="body"
+            style={{
+              textDecorationLine: checked ? "line-through" : "none",
+              opacity: checked ? 0.5 : 1,
+            }}
+          >
+            {name}
+          </ThemedText>
+          <View style={styles.itemFooter}>
+            <ThemedText colorName="text.3" type="body">
+              3
+            </ThemedText>
+            <ThemedText colorName="text.3" type="body">
+              $ 5.45
+            </ThemedText>
+          </View>
+        </View>
+      </ThemedView>
+    </ReanimatedSwipeable>
+  );
+});
+
+export default function List() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams() as { id: string };
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: string; index: number }) => {
+      return <ListItem name={item + index} />;
+    },
+    []
+  );
 
   return (
     <View style={styles.container}>
-      <View
-        style={{
-          padding: 16,
+      <Stack.Screen
+        options={{
+          title: "",
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()}>
+              <Feather name="chevron-left" size={24} />
+            </Pressable>
+          ),
         }}
-      >
-        <View>
-          <Text>{id}</Text>
-          <Text>header</Text>
-        </View>
-        <View>
-          <Text>lista</Text>
-        </View>
+      />
+      <View style={styles.header}>
+        <ThemedText colorName="text.1" type="subtitle">
+          {id}
+        </ThemedText>
       </View>
-      <ThemedView style={styles.createContainer}>
-        <ThemedView colorName="background.1" style={styles.createSheet}>
-          <View style={styles.input}>
-            <View style={styles.inputContainer}>
-              <TextInput
-                placeholder="Arroz japones"
-                value={product}
-                onChangeText={(value) => setProduct(value)}
-                style={{ flex: 1, color: textColor }}
-                placeholderTextColor={textColor}
-              />
-            </View>
-            {!product && (
-              <TouchableOpacity
-                onPress={() => {
-                  Haptics.selectionAsync();
-                }}
-                style={{
-                  padding: 8,
-                }}
-              >
-                <Feather name="chevron-up" size={18} color={iconColor} />
-              </TouchableOpacity>
-            )}
-            {product && (
-              <TouchableOpacity
-                onPress={() => {
-                  Haptics.selectionAsync();
-                }}
-                style={{
-                  padding: 8,
-                }}
-              >
-                <Feather name="check" size={16} color={iconColor} />
-              </TouchableOpacity>
-            )}
-          </View>
-          {showOptions && (
-            <>
-              <ThemedView
-                colorName="background.2"
-                style={{
-                  height: 1,
-                  marginVertical: 6,
-                }}
-              />
-              <View style={styles.optionsContainer}>
-                <ValueInput />
-                <QuantitySelector
-                  quantity={quantity}
-                  setQuantity={setQuantity}
-                />
-              </View>
-            </>
-          )}
-        </ThemedView>
-      </ThemedView>
+      <Animated.FlatList
+        style={styles.listContainer}
+        data={data}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => item + index}
+        contentInsetAdjustmentBehavior="automatic"
+        maxToRenderPerBatch={15}
+        windowSize={21}
+      />
+      <ProductEntry />
     </View>
   );
 }
@@ -145,32 +172,59 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  createContainer: {
-    padding: 8,
-    bottom: 0,
-    position: "absolute",
-    width: "100%",
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
-  inputContainer: {
+  listContainer: {
+    padding: 8,
+    paddingHorizontal: 16,
+    marginBottom: 84,
+  },
+  item: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
-    flex: 1,
-  },
-  createSheet: {
-    width: "100%",
+    gap: 8,
     padding: 8,
-    borderRadius: 16,
   },
-  input: {
+  itemContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  itemFooter: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
 
-  optionsContainer: {
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "space-between",
+  button: {
+    height: 24,
+    width: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  text: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  action: {
+    width: "90%",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100%",
+    paddingHorizontal: 16,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  actionText: {
+    color: "white",
+    fontSize: 16,
   },
 });
