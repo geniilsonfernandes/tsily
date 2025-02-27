@@ -5,7 +5,16 @@ import { ThemedView } from "@/components/ThemedView";
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { Link } from "expo-router";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { MMKV } from "react-native-mmkv";
 import Animated from "react-native-reanimated";
 
 const SkeletonItem = () => {
@@ -20,7 +29,13 @@ const SkeletonItem = () => {
     ></ThemedView>
   );
 };
+
+const storage = new MMKV({
+  id: "storage:db",
+});
+
 export default function HomeScreen() {
+  const [listName, setListName] = useState<string>("");
   const shoppingLists = useQuery(api.shopping.getShoppingLists);
   return (
     <ThemedView colorName="background" style={styles.container}>
@@ -55,6 +70,26 @@ export default function HomeScreen() {
           keyExtractor={({ _id }, index) => _id}
         />
       )}
+      <Text>{storage.getString("listName") || "Nenhuma lista criada"}</Text>
+      <TextInput
+        value={listName}
+        onChangeText={setListName}
+        placeholder="Nome da lista"
+      />
+      <View>
+        <Pressable
+          style={{
+            backgroundColor: "red",
+            padding: 8,
+          }}
+          onPress={() => {
+            storage.set("listName", listName);
+            setListName("");
+          }}
+        >
+          <Text>criar</Text>
+        </Pressable>
+      </View>
     </ThemedView>
   );
 }
