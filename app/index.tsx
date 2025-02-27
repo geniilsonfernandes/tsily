@@ -2,26 +2,26 @@ import { List } from "@/components/List";
 import { Search } from "@/components/Search";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { api } from "@/convex/_generated/api";
+import { useQuery } from "convex/react";
 import { Link } from "expo-router";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import Animated from "react-native-reanimated";
 
-const shoppingLists = [
-  { title: "Lista de Compras do João", totalItems: 5, items: [] },
-  { title: "Lista de Compras da Maria", totalItems: 8, items: [] },
-  { title: "Lista de Compras do Marco", totalItems: 3, items: [] },
-  { title: "Lista de Compras para Viagem", totalItems: 6, items: [] },
-  { title: "Lista de Compras do Fim de Semana", totalItems: 4, items: [] },
-  { title: "Lista de Compras da Casa Nova", totalItems: 7, items: [] },
-  { title: "Lista de Compras do Mês", totalItems: 10, items: [] },
-  { title: "Lista de Compras do Fim de Semana", totalItems: 4, items: [] },
-  { title: "Lista de Compras da Casa Nova", totalItems: 7, items: [] },
-  { title: "Lista de Compras do Mês", totalItems: 10, items: [] },
-];
-
+const SkeletonItem = () => {
+  return (
+    <ThemedView
+      colorName="background.1"
+      style={{
+        height: 70,
+        borderRadius: 8,
+        overflow: "hidden",
+      }}
+    ></ThemedView>
+  );
+};
 export default function HomeScreen() {
-  const backgroundColor = useThemeColor({}, "background");
+  const shoppingLists = useQuery(api.shopping.getShoppingLists);
   return (
     <ThemedView colorName="background" style={styles.container}>
       <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
@@ -31,30 +31,30 @@ export default function HomeScreen() {
         </View>
 
         <Search />
-        {/* <LinearGradient
-          // Background Linear Gradient
-          colors={[backgroundColor, "transparent"]}
-          style={styles.background}
-        /> */}
       </View>
-
-      <Animated.FlatList
-        style={{ flex: 1, paddingHorizontal: 16 }}
-        data={shoppingLists}
-        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-        renderItem={({ item }) => (
-          <Link href={`/list/${item.title}`} asChild>
-            <TouchableOpacity>
-              <List
-                title={item.title}
-                key={item.title}
-                quantity={item.totalItems}
-              />
-            </TouchableOpacity>
-          </Link>
-        )}
-        keyExtractor={(item, index) => index.toString()}
-      />
+      {!shoppingLists ? (
+        <Animated.FlatList
+          style={{ flex: 1, paddingHorizontal: 16 }}
+          data={Array(5).fill(0)} // 5 Skeletons
+          keyExtractor={(_, index) => `skeleton-${index}`}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+          renderItem={() => <SkeletonItem />}
+        />
+      ) : (
+        <Animated.FlatList
+          style={{ flex: 1, paddingHorizontal: 16 }}
+          data={shoppingLists}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+          renderItem={({ item }) => (
+            <Link href={`/list/${item._id}`} asChild>
+              <TouchableOpacity>
+                <List title={item.name} quantity={9} />
+              </TouchableOpacity>
+            </Link>
+          )}
+          keyExtractor={({ _id }, index) => _id}
+        />
+      )}
     </ThemedView>
   );
 }
