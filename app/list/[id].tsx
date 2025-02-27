@@ -1,13 +1,15 @@
 import { ListItem } from "@/components/ListItem";
+import { ListOptions } from "@/components/ListOptions";
 import { ProductEntry } from "@/components/ProductEntry";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { api } from "@/convex/_generated/api";
 import { Doc, Id } from "@/convex/_generated/dataModel";
 import { Feather } from "@expo/vector-icons";
+import BottomSheet from "@gorhom/bottom-sheet";
 import { useMutation, useQuery } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 
@@ -17,6 +19,14 @@ export default function List() {
   const list = useQuery(api.shopping.getShoppingListById, {
     id: id as Id<"shopping_lists">,
   });
+
+  // ref
+  const bottomSheetRef = useRef<BottomSheet>(null);
+
+  // callbacks
+  const handleSheetChanges = useCallback((index: number) => {
+    console.log("handleSheetChanges", index);
+  }, []);
 
   const onCheck = useMutation(api.shopping.checkItem);
 
@@ -32,6 +42,8 @@ export default function List() {
     []
   );
 
+  // variables
+
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -44,13 +56,11 @@ export default function List() {
             </Pressable>
           ),
           headerRight: () => (
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 16 }}
-            >
-              <Feather name="user-plus" size={18} />
-              <Feather name="share-2" size={18} />
-              <Feather name="more-vertical" size={18} />
-            </View>
+            <ListOptions
+              onOpenSheet={() => {
+                bottomSheetRef.current?.expand();
+              }}
+            />
           ),
         }}
       />
@@ -103,7 +113,15 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
-
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 36,
+    paddingVertical: 124,
+    alignItems: "center",
+  },
+  backdrop: {
     backgroundColor: "red",
+    height: "100%",
   },
 });
