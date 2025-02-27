@@ -1,9 +1,12 @@
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { ThemedView } from "@/components/ThemedView";
 import { ValueInput } from "@/components/ValueInput";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import useKeyboardVisibility from "@/hooks/useKeyboardVisibility";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
+import { useMutation } from "convex/react";
 import * as Haptics from "expo-haptics";
 import React, { useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
@@ -13,7 +16,7 @@ import Animated, {
   Easing,
   FadeInDown,
 } from "react-native-reanimated";
-import { SuggestionsList } from "./SuggestionsList";
+import { Suggestions } from "./Suggestions";
 
 export const data = [
   "Arroz",
@@ -68,16 +71,32 @@ export const data = [
   "Desodorante",
 ];
 
-const MAX_DIGITS = 5;
+type ProductEntryProps = {
+  listId: string;
+};
 
-export const ProductEntry = () => {
+export const ProductEntry: React.FC<ProductEntryProps> = ({ listId }) => {
   const inputRef = useRef<TextInput>(null);
   const isKeyboardVisible = useKeyboardVisibility();
   const [product, setProduct] = useState("");
   const [quantity, setQuantity] = useState("");
-
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const textColor = useThemeColor({}, "text");
   const placeholderTextColor = useThemeColor({}, "text.3");
+
+  const addItem = useMutation(api.shopping.addItem);
+
+  const handleAddItem = () => {
+    addItem({
+      listId: listId as Id<"shopping_lists">,
+      name: product,
+      quantity: quantity ? +quantity : 1,
+      checked: false,
+      value: 1,
+    });
+    setProduct("");
+    setQuantity("");
+  };
 
   const filterData = useMemo(() => {
     if (!product) {
@@ -90,7 +109,15 @@ export const ProductEntry = () => {
 
   return (
     <View style={styles.container}>
-      <SuggestionsList data={filterData} />
+      {showSuggestions && (
+        <Suggestions
+          onSelect={(suggestion) => {
+            setProduct(suggestion);
+            setShowSuggestions(false);
+          }}
+          suggestions={filterData}
+        />
+      )}
       <ThemedView
         backgroundColor="background.1"
         borderColor="background.3"
@@ -100,7 +127,10 @@ export const ProductEntry = () => {
           <TextInput
             placeholder="Arroz japones"
             value={product}
-            onChangeText={(value) => setProduct(value)}
+            onChangeText={(value) => {
+              setShowSuggestions(true);
+              setProduct(value);
+            }}
             style={{ flex: 1, color: textColor }}
             placeholderTextColor={placeholderTextColor}
             ref={inputRef}
@@ -110,9 +140,7 @@ export const ProductEntry = () => {
             pointerEvents={product ? "auto" : "none"}
             onPress={() => {
               Haptics.selectionAsync();
-              if (!product) {
-                inputRef.current?.focus();
-              }
+              handleAddItem();
             }}
             disabled={!product}
             style={() => [
@@ -164,8 +192,10 @@ const styles = StyleSheet.create({
   },
   createSheet: {
     width: "100%",
-    padding: 8,
+    padding: 4,
     borderRadius: 16,
+    borderTopEndRadius: 24,
+    borderBottomRightRadius: 24,
   },
   addButton: {
     padding: 8,

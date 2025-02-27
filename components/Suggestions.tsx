@@ -1,21 +1,36 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import Animated, { Easing, FadeIn, FadeInUp } from "react-native-reanimated";
 import { Chip } from "./Chip";
 
-export const SuggestionsList = ({ data }: { data: string[] }) => {
+type SuggestionsProps = {
+  onSelect: (item: string) => void;
+  suggestions: string[];
+};
+
+export const Suggestions: React.FC<SuggestionsProps> = ({
+  onSelect,
+  suggestions,
+}) => {
   const [mode, setMode] = useState<"horizontal" | "vertical">("horizontal");
   const iconColor = useThemeColor({}, "text.3");
 
-  if (data.length === 0) {
+  const handleSelect = (item: string) => {
+    Haptics.selectionAsync();
+    onSelect(item);
+  };
+
+  if (suggestions.length === 0) {
     return null;
   }
 
+  // TODO: Add a button to switch between horizontal and vertical mode
+
   return (
     <View style={{ gap: 8 }}>
-      <Pressable
+      {/* <Pressable
         
         style={({ pressed }) => [styles.button]}
       >
@@ -24,14 +39,13 @@ export const SuggestionsList = ({ data }: { data: string[] }) => {
           size={16}
           color={iconColor}
         />
-      </Pressable>
+      </Pressable> */}
       {mode === "vertical" && (
         <ScrollView
           style={{
             marginBottom: 8,
             maxHeight: 200,
           }}
-
         >
           <Animated.View
             entering={FadeInUp.duration(300).easing(Easing.inOut(Easing.quad))}
@@ -40,10 +54,9 @@ export const SuggestionsList = ({ data }: { data: string[] }) => {
               flexWrap: "wrap",
               gap: 4,
               marginBottom: 8,
-        
             }}
           >
-            {data.map((item, index) => (
+            {suggestions.map((item, index) => (
               <Animated.View
                 key={item}
                 entering={FadeIn.delay(index * 10)
@@ -64,16 +77,19 @@ export const SuggestionsList = ({ data }: { data: string[] }) => {
           }}
           horizontal={true}
           showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
           keyExtractor={(item) => item}
           ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
-          data={data}
+          data={suggestions}
           renderItem={({ item, index }) => (
             <Animated.View
               entering={FadeIn.delay(index * 10)
                 .duration(300)
                 .easing(Easing.inOut(Easing.quad))}
             >
-              <Chip label={item} />
+              <TouchableOpacity onPress={() => handleSelect(item)}>
+                <Chip label={item} />
+              </TouchableOpacity>
             </Animated.View>
           )}
         />
@@ -84,7 +100,6 @@ export const SuggestionsList = ({ data }: { data: string[] }) => {
 
 const styles = StyleSheet.create({
   button: {
-
     borderRadius: 5,
     alignItems: "center",
     justifyContent: "center",

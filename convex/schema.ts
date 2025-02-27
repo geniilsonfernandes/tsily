@@ -19,5 +19,6 @@ export default defineSchema({
     name: v.string(), // Nome do item (ex: "Leite", "Ovos")
     quantity: v.optional(v.number()), // Quantidade (ex: 2 unidades)
     checked: v.boolean(), // Se foi comprado ou não
+    value: v.optional(v.number()), // Valor do item
   }).index("by_list", ["listId"]),
 });
