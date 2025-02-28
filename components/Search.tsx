@@ -6,24 +6,26 @@ import { ThemedView } from "./ThemedView";
 
 export const Search = () => {
   const backgroundColor = useThemeColor({}, "background.1");
-  const textColor = useThemeColor({}, "text");
-  const iconColor = useThemeColor({}, "text.3");
+  const textColor = useThemeColor({}, "text.2");
+  const iconColor = useThemeColor({}, "text.5");
+  const placeholderColor = useThemeColor({}, "text.5");
+
   return (
-    <View style={[styles.container, { backgroundColor }]}>
+    <ThemedView style={styles.container} colorName="background.1">
       <View style={styles.icon}>
-        <Feather name="search" size={16} color={textColor} />
+        <Feather name="search" size={16} color={iconColor} />
       </View>
       <TextInput
-        placeholder="Search"
-        placeholderTextColor={textColor}
+        placeholder="Procurar Lista"
+        placeholderTextColor={placeholderColor}
         style={[styles.input, { color: textColor }]}
       />
       <TouchableOpacity>
         <ThemedView colorName="background" style={styles.leftContainer}>
-          <Feather name="filter" size={16} color={iconColor} />
+          <Feather name="filter" size={18} color={iconColor} />
         </ThemedView>
       </TouchableOpacity>
-    </View>
+    </ThemedView>
   );
 };
 
@@ -32,9 +34,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 16,
     paddingHorizontal: 8,
-    height: 48,
+    height: 52,
   },
   icon: {
     height: 32,
@@ -47,10 +49,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   leftContainer: {
-    width: 32,
-    height: 32,
+    width: 38,
+    height: 38,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 12,
   },
 });
