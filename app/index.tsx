@@ -1,95 +1,93 @@
+import { CreateList } from "@/components/CreateList";
 import { List } from "@/components/List";
+import { ListModal } from "@/components/ListModal";
 import { Search } from "@/components/Search";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { api } from "@/convex/_generated/api";
-import { useQuery } from "convex/react";
-import { Link } from "expo-router";
-import { useState } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { MMKV } from "react-native-mmkv";
+import { List as ListType, useList } from "@/database/useList";
+import { useDisclosure } from "@/hooks/useDisclosure";
+import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 
-const SkeletonItem = () => {
-  return (
-    <ThemedView
-      colorName="background.1"
-      style={{
-        height: 70,
-        borderRadius: 8,
-        overflow: "hidden",
-      }}
-    ></ThemedView>
-  );
-};
-
-const storage = new MMKV({
-  id: "storage:db",
-});
-
 export default function HomeScreen() {
+  const [openedCreateList, { toggle: openCreateList, close: closeCreateList }] =
+    useDisclosure();
+  const [listSelected, setListSelected] = useState<ListType | null>(null);
+  const router = useRouter();
   const [listName, setListName] = useState<string>("");
-  const shoppingLists = useQuery(api.shopping.getShoppingLists);
+  const [shoppingLists, setShoppingLists] = useState<ListType[] | null>(null);
+  const db = useList();
+
+  const handleCreateList = async () => {
+    try {
+      await db.createList({
+        name: listName,
+      });
+      Alert.alert("Success", "List created successfully");
+    } catch (error) {
+      Alert.alert("Error", "Failed to create list");
+    }
+  };
+
+  const getLists = async () => {
+    try {
+      const lists = await db.list();
+      setShoppingLists(lists);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getLists();
+  }, []);
+
   return (
     <ThemedView colorName="background" style={styles.container}>
-      <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+      <View style={{ paddingHorizontal: 24, marginBottom: 16 }}>
         <View style={styles.header}>
           <ThemedText type="title">Tsily</ThemedText>
-          <View style={styles.avatar} />
+          <Pressable style={styles.avatar}>
+            <Feather name="user" size={24} />
+          </Pressable>
         </View>
 
         <Search />
       </View>
-      {!shoppingLists ? (
-        <Animated.FlatList
-          style={{ flex: 1, paddingHorizontal: 16 }}
-          data={Array(5).fill(0)} // 5 Skeletons
-          keyExtractor={(_, index) => `skeleton-${index}`}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={() => <SkeletonItem />}
-        />
-      ) : (
-        <Animated.FlatList
-          style={{ flex: 1, paddingHorizontal: 16 }}
-          data={shoppingLists}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => (
-            <Link href={`/list/${item._id}`} asChild>
-              <TouchableOpacity>
-                <List title={item.name} quantity={9} />
-              </TouchableOpacity>
-            </Link>
-          )}
-          keyExtractor={({ _id }, index) => _id}
-        />
-      )}
-      <Text>{storage.getString("listName") || "Nenhuma lista criada"}</Text>
-      <TextInput
-        value={listName}
-        onChangeText={setListName}
-        placeholder="Nome da lista"
+
+      <Animated.FlatList
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 94, paddingHorizontal: 24 }}
+        data={Array.from({ length: 10 }).map((_, index) => ({
+          id: index.toString(),
+          name: `List ${index}`,
+        }))}
+        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+        renderItem={({ item }) => (
+          <List
+            title={item.name}
+            quantity={9}
+            onPress={() => {
+              router.push(`/list/${item.id}`);
+            }}
+            onLongPress={() => {
+              setListSelected(item);
+            }}
+          />
+        )}
+        keyExtractor={({ id }, index) => id}
       />
-      <View>
-        <Pressable
-          style={{
-            backgroundColor: "red",
-            padding: 8,
-          }}
-          onPress={() => {
-            storage.set("listName", listName);
-            setListName("");
-          }}
-        >
-          <Text>criar</Text>
-        </Pressable>
-      </View>
+
+      <ListModal
+        opened={!!listSelected}
+        onClose={() => {
+          setListSelected(null);
+        }}
+      />
+      <CreateList opened={openedCreateList} onClose={closeCreateList} />
     </ThemedView>
   );
 }
@@ -107,40 +105,47 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
-  avatar: {
-    width: 40,
-    height: 40,
+  button: {
+    backgroundColor: "#272324",
     borderRadius: 24,
-    backgroundColor: "red",
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+    height: 48,
+    width: 48,
+    justifyContent: "center",
+    alignItems: "center",
     position: "absolute",
+    bottom: 24,
+    alignSelf: "center",
+  },
+  buttonText: {
+    textAlign: "center",
   },
 
-  background: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    bottom: -50,
-    height: 50,
-  },
-  button: {
-    padding: 15,
+  avatar: {
+    borderRadius: 24,
+    height: 48,
+    width: 48,
+    justifyContent: "center",
     alignItems: "center",
-    borderRadius: 5,
   },
-  text: {
-    backgroundColor: "transparent",
-    fontSize: 15,
+
+  createButton: {
+    backgroundColor: "rgb(78, 78, 78)",
+    height: 48,
+    borderRadius: 16,
+    justifyContent: "center",
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    marginHorizontal: 24,
+    position: "absolute",
+    bottom: 16,
+    alignSelf: "center",
+    width: "90%",
+
+    alignItems: "center",
+  },
+  createButtonText: {
     color: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

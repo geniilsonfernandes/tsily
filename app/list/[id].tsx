@@ -4,10 +4,10 @@ import { ProductEntry } from "@/components/ProductEntry";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { api } from "@/convex/_generated/api";
-import { Doc, Id } from "@/convex/_generated/dataModel";
+import { Doc } from "@/convex/_generated/dataModel";
 import { Feather } from "@expo/vector-icons";
 import BottomSheet from "@gorhom/bottom-sheet";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useRef } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -16,10 +16,15 @@ import Animated from "react-native-reanimated";
 export default function List() {
   const router = useRouter();
   const { id } = useLocalSearchParams() as { id: string };
-  const list = useQuery(api.shopping.getShoppingListById, {
-    id: id as Id<"shopping_lists">,
-  });
 
+  const list = {
+    name: "Groceries",
+    items: [
+      { name: "Milk", quantity: 1, checked: true },
+      { name: "Eggs", quantity: 12, checked: false },
+      { name: "Bread", quantity: 2, checked: true },
+    ],
+  };
   // ref
   const bottomSheetRef = useRef<BottomSheet>(null);
 
@@ -80,7 +85,7 @@ export default function List() {
 
       <Animated.FlatList
         contentContainerStyle={{ paddingBottom: 124 }}
-        data={list?.items || []}
+        data={[]}
         renderItem={renderItem}
         keyExtractor={(item) => item._id}
         ItemSeparatorComponent={() => (

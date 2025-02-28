@@ -16,11 +16,10 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-import { ConvexProvider, ConvexReactClient } from "convex/react";
-
-const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
-  unsavedChangesWarning: false,
-});
+import { convex } from "@/convex/cache";
+import { initializeDatabase } from "@/database/initializeDatabase";
+import { ConvexProvider } from "convex/react";
+import { SQLiteProvider } from "expo-sqlite";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -40,19 +39,21 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ConvexProvider client={convex}>
-        <ThemeProvider
-          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
-          <Stack>
-            {/* <Stack.Screen name="(tabs)" options={{ headerShown: false }} /> */}
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="list" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </ConvexProvider>
+      <SQLiteProvider databaseName="myDatabase.db" onInit={initializeDatabase}>
+        <ConvexProvider client={convex}>
+          <ThemeProvider
+            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+          >
+            <Stack>
+              {/* <Stack.Screen name="(tabs)" options={{ headerShown: false }} /> */}
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="list" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </ConvexProvider>
+      </SQLiteProvider>
     </GestureHandlerRootView>
   );
 }

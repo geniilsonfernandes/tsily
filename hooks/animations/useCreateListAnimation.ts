@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { ReduceMotion, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 
-const CLOSED_POSITION = -210;
+const CLOSED_POSITION = -310;
 export const useCreateListAnimation = () => {
   const [opened, setOpenned] = useState(false);
-  const position = useSharedValue(CLOSED_POSITION);
+  const position = useSharedValue(0);
   const gap = useSharedValue(8);
 
   const animatedSheetStyle = useAnimatedStyle(() => ({

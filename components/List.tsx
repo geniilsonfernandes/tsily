@@ -1,17 +1,32 @@
+import * as Haptics from "expo-haptics";
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { ThemedView } from "./ThemedView";
 
 type ListProps = {
   title: string;
   quantity: number;
+  onPress: () => void;
+  onLongPress: () => void;
 };
 
-export const List: React.FC<ListProps> = ({ title, quantity }) => {
+export const List: React.FC<ListProps> = ({
+  title,
+  quantity,
+  onPress,
+  onLongPress,
+}) => {
   const progress = (25 / 30) * 100;
+
+  const handlePressLong = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+    onLongPress();
+  };
+
   return (
-      <ThemedView colorName="background.1" style={styles.container}>
+    <TouchableOpacity onLongPress={handlePressLong} onPress={onPress}>
+      <ThemedView backgroundColor="background.1" style={styles.container}>
         <ThemedView style={styles.header}>
           <ThemedText style={styles.title}>{title}</ThemedText>
           <ThemedText style={styles.quantity} colorName="text.3">
@@ -25,13 +40,14 @@ export const List: React.FC<ListProps> = ({ title, quantity }) => {
           />
         </ThemedView>
       </ThemedView>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 16,
     width: "100%",
     flex: 1,
   },

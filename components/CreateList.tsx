@@ -1,23 +1,15 @@
+import { useCreateListAnimation } from "@/hooks/animations/useCreateListAnimation";
+import { useShakeAnimation } from "@/hooks/animations/useShakeAnimation";
+import { useDisclosure } from "@/hooks/useDisclosure";
 import { Feather } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import Animated, {
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
-import { ThemedText } from "./ThemedText";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
+import { ThemedView } from "./ThemedView";
+import { Input } from "./ui/Input";
 
 const listNameSugestion = [
   "Feira da Semana",
@@ -33,27 +25,40 @@ const listNameSugestion = [
   "Churrasco",
   "Jantar Especial",
 ];
-export const CreateList = () => {
+
+// TODO: MUDAR A LOGICA PARA UM HOOK
+// TODO: MUDAR A LOGICA DAS ANIAMCOES PARA UM HOOK
+// TODO: usar o falsh list
+
+const useCreateList = () => {};
+
+type CreateListProps = {
+  opened: boolean;
+  onClose: () => void;
+};
+
+export const CreateList: React.FC<CreateListProps> = ({ onClose, opened }) => {
+  const { startShake, animatedStyle: animatedShake } = useShakeAnimation();
+  const {
+    animatedSheetStyle: animatedSheet,
+    toggleOpen: toggleSheet,
+    opened: isSheetOpened,
+  } = useCreateListAnimation();
+  const [showMore, { toggle: toggleShowMore, close: closeShowMore }] =
+    useDisclosure();
   const [listName, setListName] = useState("");
   const [listBudget, setListBudget] = useState("");
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const height = useSharedValue(1);
+  const [isError, setIsError] = useState(false);
 
   const setListNameSugestion = (name: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setListName(name);
   };
 
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-    height.value = withTiming(isExpanded ? 300 : 450, { duration: 300 }); // Altera altura suavemente
+  const handleCloseSheet = () => {
+    closeShowMore();
+    toggleSheet();
   };
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    height: height.value,
-    opacity: height.value > 0 ? 1 : 0,
-  }));
 
   const handleIncrement = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -76,104 +81,149 @@ export const CreateList = () => {
     setListName(randomName);
   };
 
+  const handleCreateList = () => {
+    onClose();
+    if (!listName) {
+      startShake();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setIsError(true);
+      return;
+    }
+    if (listName && listBudget) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      // TODO: MUDAR A LOGICA PARA UM HOOK
+      // TODO: MUDAR A LOGICA DAS ANIAMCOES PARA UM HOOK
+      // TODO: usar o falsh list
+      // TODO: usar o falsh list
+    }
+  };
+
+  const handleClose = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onClose();
+  };
+
   return (
-    <View style={styles.container}>
+    <View>
       <Pressable
-        style={styles.closeButton}
-        onPress={toggleExpand}
+        onPress={toggleSheet}
+        style={{
+          backgroundColor: "rgb(78, 78, 78)",
+          height: 48,
+          borderRadius: 16,
+          justifyContent: "center",
+          borderTopLeftRadius: 8,
+          borderTopRightRadius: 8,
+          marginHorizontal: 24,
+          position: "absolute",
+          bottom: 16,
+          alignSelf: "center",
+          width: "90%",
+
+          alignItems: "center",
+        }}
         accessibilityRole="button"
       >
-        <Feather name="x" size={16} color="rgb(140, 140, 140)" />
-        <ThemedText style={styles.closeText}>Fechar</ThemedText>
+        <Text style={styles.createButtonText}>Criar lista</Text>
       </Pressable>
-      <Animated.View style={[styles.modal]}>
-        <View style={styles.content}>
-          <View style={styles.inputContainer}>
-            <TextInput
+      <Animated.View style={[styles.container, animatedSheet]}>
+        <Animated.View style={[styles.modal, animatedShake]}>
+          <View style={styles.content}>
+            <Input
               placeholder="Nome da lista"
-              style={[
-                styles.input,
-                {
-                  borderBottomLeftRadius: 8,
-                  borderBottomRightRadius: 8,
-                },
-              ]}
               value={listName}
-              onChangeText={setListName}
+              onChangeText={(text) => {
+                setIsError(false);
+                setListName(text);
+              }}
+              iconName="repeat"
+              onIconPress={() => handleGetRandomName()}
+              capBorder="bottom"
+              isError={isError}
             />
+            <Pressable onPress={toggleSheet}>
+              <ThemedView colorName="background.1" style={styles.closeButton}>
+                <Feather name="x" size={18} color={"red"} />
+              </ThemedView>
+            </Pressable>
+
+            <FlatList
+              data={listNameSugestion}
+              horizontal
+              contentContainerStyle={styles.suggestionContainer}
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="always"
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={styles.suggestion}
+                  onPress={() => setListNameSugestion(item)}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.suggestionText}>{item}</Text>
+                </Pressable>
+              )}
+              keyExtractor={(item) => item}
+            />
+
             <Feather
-              name="repeat"
-              size={18}
-              style={styles.inputIcon}
-              color="rgb(140, 140, 140)"
-              onPress={() => handleGetRandomName()}
+              name={!showMore ? "chevron-up" : "chevron-down"}
+              size={24}
+              style={styles.icon}
+              onPress={toggleShowMore}
+              color="rgb(197, 197, 197)"
             />
-          </View>
-          <FlatList
-            data={listNameSugestion}
-            horizontal
-            contentContainerStyle={styles.suggestionContainer}
-            showsHorizontalScrollIndicator={false}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.suggestion}
-                onPress={() => setListNameSugestion(item)}
-                accessibilityRole="button"
+
+            {showMore && (
+              <Animated.View
+                entering={FadeInUp.duration(300)}
+                style={styles.budgetContainer}
               >
-                <Text style={styles.suggestionText}>{item}</Text>
-              </Pressable>
+                <Input
+                  placeholder="Orçamento da lista"
+                  value={listBudget}
+                  onChangeText={setListBudget}
+                  keyboardType="numeric"
+                  capBorder="bottom"
+                  rightSection={
+                    <View style={styles.budgetButtonContainer}>
+                      <Pressable
+                        style={styles.budgetButton}
+                        onPress={handleDecrement}
+                        accessibilityRole="button"
+                      >
+                        <Feather
+                          name="minus"
+                          size={16}
+                          color="rgb(18, 18, 18)"
+                        />
+                      </Pressable>
+                      <Pressable
+                        style={styles.budgetButton}
+                        onPress={handleIncrement}
+                        accessibilityRole="button"
+                      >
+                        <Feather
+                          name="plus"
+                          size={16}
+                          color="rgb(18, 18, 18)"
+                        />
+                      </Pressable>
+                    </View>
+                  }
+                />
+              </Animated.View>
             )}
-            keyExtractor={(item) => item}
-          />
+          </View>
 
-          <Feather
-            name={!isExpanded ? "chevron-up" : "chevron-down"}
-            size={24}
-            style={styles.icon}
-            onPress={toggleExpand}
-            color="rgb(197, 197, 197)"
-          />
-
-          {isExpanded && (
-            <Animated.View
-              entering={FadeInUp.duration(300)}
-              style={styles.budgetContainer}
-            >
-              <TextInput
-                placeholder="Orçamento da lista"
-                style={[
-                  styles.input,
-                  {
-                    borderBottomLeftRadius: 8,
-                    borderBottomRightRadius: 8,
-                  },
-                ]}
-                value={listBudget}
-                onChangeText={setListBudget}
-                keyboardType="numeric"
-              />
-              <Pressable
-                style={[styles.budgetButton, { marginRight: 46 }]}
-                onPress={handleDecrement}
-                accessibilityRole="button"
-              >
-                <Feather name="minus" size={16} color="rgb(18, 18, 18)" />
-              </Pressable>
-              <Pressable
-                style={styles.budgetButton}
-                onPress={handleIncrement}
-                accessibilityRole="button"
-              >
-                <Feather name="plus" size={16} color="rgb(18, 18, 18)" />
-              </Pressable>
-            </Animated.View>
-          )}
-        </View>
-
-        <Pressable style={styles.createButton} accessibilityRole="button">
-          <Text style={styles.createButtonText}>Criar lista</Text>
-        </Pressable>
+          <Pressable
+            style={styles.createButton}
+            onPress={handleCreateList}
+            accessibilityRole="button"
+          >
+            <Text style={styles.createButtonText}>Criar lista</Text>
+          </Pressable>
+        </Animated.View>
       </Animated.View>
     </View>
   );
@@ -181,8 +231,14 @@ export const CreateList = () => {
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: "rgb(0, 0, 0)",
+    flex: 1,
     width: "100%",
-    padding: 16,
+    padding: 8,
+    bottom: 0,
+    gap: 10,
+    justifyContent: "flex-end",
+    position: "absolute",
   },
   modal: {
     backgroundColor: "#fff",
@@ -193,23 +249,30 @@ const styles = StyleSheet.create({
 
     justifyContent: "space-between",
   },
+  openButton: {
+    backgroundColor: "rgb(78, 78, 78)",
+  },
   closeButton: {
-    backgroundColor: "rgba(245, 245, 245, 0.83)",
+    backgroundColor: "rgb(245, 245, 245)",
     borderWidth: 1,
     borderColor: "rgb(223, 223, 223)",
-    padding: 6,
-    paddingHorizontal: 12,
+    padding: 10,
+    paddingHorizontal: 24,
     borderRadius: 24,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     alignSelf: "center",
+    borderBottomEndRadius: 8,
+    borderBottomStartRadius: 8,
     marginBottom: 10,
-    position: "absolute",
-    top: -32,
   },
   closeText: {
     color: "rgb(140, 140, 140)",
+    fontSize: 14,
+  },
+  openText: {
+    color: "rgb(236, 236, 236)",
     fontSize: 14,
   },
   suggestion: {
@@ -239,29 +302,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  input: {
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgb(243, 243, 243)",
-    paddingHorizontal: 16,
-
-    width: "100%",
-  },
-  inputIcon: {
-    position: "absolute",
-    justifyContent: "center",
-    alignItems: "center",
-    right: 16,
-    alignSelf: "center",
-  },
-
-  inputContainer: {
-    flexDirection: "row",
-  },
-
   icon: {
     alignSelf: "center",
-    marginVertical: 8,
+    padding: 8,
+    borderRadius: 24,
   },
   createButton: {
     backgroundColor: "rgb(78, 78, 78)",
@@ -286,15 +330,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
+  budgetButtonContainer: {
+    flexDirection: "row",
+    right: 0,
+    justifyContent: "flex-end",
+    gap: 8,
+  },
   budgetButton: {
     backgroundColor: "rgb(255, 255, 255)",
     width: 40,
     height: 40,
-    borderRadius: 32,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    position: "absolute",
-    right: 4,
-    
   },
 });
