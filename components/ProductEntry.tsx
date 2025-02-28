@@ -1,12 +1,9 @@
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { ThemedView } from "@/components/ThemedView";
 import { ValueInput } from "@/components/ValueInput";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
 import useKeyboardVisibility from "@/hooks/useKeyboardVisibility";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
-import { useMutation } from "convex/react";
 import * as Haptics from "expo-haptics";
 import React, { useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
@@ -84,16 +81,7 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({ listId }) => {
   const textColor = useThemeColor({}, "text");
   const placeholderTextColor = useThemeColor({}, "text.3");
 
-  const addItem = useMutation(api.shopping.addItem);
-
   const handleAddItem = () => {
-    addItem({
-      listId: listId as Id<"shopping_lists">,
-      name: product,
-      quantity: quantity ? +quantity : 1,
-      checked: false,
-      value: 1,
-    });
     setProduct("");
     setQuantity("");
   };
@@ -131,7 +119,7 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({ listId }) => {
               setShowSuggestions(true);
               setProduct(value);
             }}
-            style={{ flex: 1, color: textColor }}
+            style={{ flex: 1, color: textColor, height: 38 }}
             placeholderTextColor={placeholderTextColor}
             ref={inputRef}
           />
