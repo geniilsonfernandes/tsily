@@ -10,7 +10,7 @@ export default function RootLayout() {
         contentStyle: { flex: 1, backgroundColor: backgroundColor },
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen name="index" options={{ headerShadowVisible: false }} />
       <Stack.Screen name="[id]" />
     </Stack>
   );
