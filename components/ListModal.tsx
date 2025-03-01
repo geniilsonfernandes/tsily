@@ -96,10 +96,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
 
-  closeButton: {
+  content: {
+    backgroundColor: "white",
     padding: 8,
-    borderRadius: 8,
-    borderTopEndRadius: 16,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#DBDBDB",
+    gap: 8,
+
+    justifyContent: "space-between",
   },
 
   modalHeader: {
@@ -114,15 +119,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  content: {
-    backgroundColor: "white",
-    padding: 8,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "#DBDBDB",
-    gap: 8,
 
-    justifyContent: "space-between",
+  closeButton: {
+    padding: 8,
+    borderRadius: 8,
+    borderTopEndRadius: 16,
   },
 
   option: {

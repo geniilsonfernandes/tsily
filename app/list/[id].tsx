@@ -3,51 +3,40 @@ import { ListOptions } from "@/components/ListOptions";
 import { ProductEntry } from "@/components/ProductEntry";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { api } from "@/convex/_generated/api";
-import { Doc } from "@/convex/_generated/dataModel";
-import { Feather } from "@expo/vector-icons";
-import BottomSheet from "@gorhom/bottom-sheet";
-import { useMutation } from "convex/react";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useRef } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { BackButton } from "@/components/ui/BackButton";
+import { List, Product, useShoppingList } from "@/database/useShoppingList";
+import { Stack, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 
-export default function List() {
-  const router = useRouter();
+export default function ListView() {
   const { id } = useLocalSearchParams() as { id: string };
+  const [data, setData] = useState<List>();
+  const shoppingList = useShoppingList();
 
-  const list = {
-    name: "Groceries",
-    items: [
-      { name: "Milk", quantity: 1, checked: true },
-      { name: "Eggs", quantity: 12, checked: false },
-      { name: "Bread", quantity: 2, checked: true },
-    ],
-  };
-  // ref
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  async function list() {
+    try {
+      const response = await shoppingList.findById(id);
+      if (!response) {
+        return;
+      }
+      setData(response);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
-  // callbacks
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log("handleSheetChanges", index);
-  }, []);
-
-  const onCheck = useMutation(api.shopping.checkItem);
-
-  const renderItem = useCallback(
-    ({ item }: { item: Doc<"items">; index: number }) => {
-      return (
-        <ListItem
-          item={item}
-          onCheck={(id) => onCheck({ id, checked: !item.checked })}
-        />
-      );
+  const renderProduct = useCallback(
+    ({ item }: { item: Product; index: number }) => {
+      return <ListItem item={item} onCheck={(id) => console.log(id)} />;
     },
     []
   );
 
-  // variables
+  useEffect(() => {
+    list();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -55,39 +44,31 @@ export default function List() {
         options={{
           title: "",
           headerShadowVisible: false,
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()}>
-              <Feather name="chevron-left" size={24} />
-            </Pressable>
-          ),
-          headerRight: () => (
-            <ListOptions
-              onOpenSheet={() => {
-                bottomSheetRef.current?.expand();
-              }}
-            />
-          ),
+          headerLeft: () => <BackButton to="Home" />,
+          headerRight: () => <ListOptions />,
         }}
       />
       <View style={styles.header}>
         <ThemedText colorName="text.1" type="subtitle">
-          {list?.name}
+          {data?.name}
         </ThemedText>
         <View style={styles.stats}>
           <ThemedText colorName="text.3" type="body">
             30 produtos
           </ThemedText>
-          <ThemedText colorName="text.3" type="body">
-            300,00 / 120,00
-          </ThemedText>
+          {data?.budget ? (
+            <ThemedText colorName="text.3" type="body">
+              {data?.budget} / 120,00
+            </ThemedText>
+          ) : null}
         </View>
       </View>
 
       <Animated.FlatList
         contentContainerStyle={{ paddingBottom: 124 }}
-        data={[]}
-        renderItem={renderItem}
-        keyExtractor={(item) => item._id}
+        data={data?.products}
+        renderItem={renderProduct}
+        keyExtractor={(item) => item.id}
         ItemSeparatorComponent={() => (
           <ThemedView
             colorName="background.2"
@@ -95,7 +76,7 @@ export default function List() {
           />
         )}
       />
-      <ProductEntry listId={id} />
+      <ProductEntry listId={id} invalidList={list} />
     </View>
   );
 }
@@ -124,9 +105,5 @@ const styles = StyleSheet.create({
     padding: 36,
     paddingVertical: 124,
     alignItems: "center",
-  },
-  backdrop: {
-    backgroundColor: "red",
-    height: "100%",
   },
 });

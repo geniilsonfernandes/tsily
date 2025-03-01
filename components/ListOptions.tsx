@@ -1,16 +1,16 @@
 import { Feather } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    Modal,
-    Pressable,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Modal,
+  Pressable,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { ThemedText } from "./ThemedText";
 
 type ListOptionsProps = {
-  onOpenSheet: () => void;
+  onOpenSheet?: () => void;
 };
 
 export const ListOptions: React.FC<ListOptionsProps> = ({ onOpenSheet }) => {

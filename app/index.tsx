@@ -2,11 +2,11 @@ import { List } from "@/components/List";
 import { ListModal } from "@/components/ListModal";
 import { Search } from "@/components/Search";
 import { ThemedView } from "@/components/ThemedView";
-import { List as ListType, useLists } from "@/database/useList";
+import { List as ListType, useShoppingList } from "@/database/useShoppingList";
 import { useKeyboard } from "@/hooks/useKeyboard";
 import { Feather } from "@expo/vector-icons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BackHandler,
   FlatList,
@@ -18,11 +18,32 @@ import {
 
 export default function HomeScreen() {
   const keyboardVisible = useKeyboard();
-  const [listSelected, setListSelected] = useState<ListType | null>(null);
+  const [listSelected, setListSelected] = useState<ListType>();
+  const [data, setData] = useState<ListType[]>([]);
   const [query, setQuery] = useState("");
   const router = useRouter();
+  const shoppingList = useShoppingList();
 
-  const { data } = useLists();
+  async function list() {
+    try {
+      const response = await shoppingList.list();
+      console.log("response");
+
+      setData(response);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    list();
+  }, []);
+
+  const filteredLists = useMemo(() => {
+    return data.filter((list) =>
+      list.name.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [data, query]);
 
   useFocusEffect(() => {
     // disable back button only on home screen
@@ -36,11 +57,6 @@ export default function HomeScreen() {
     return () => backButtonHandler.remove();
   });
 
-  const filteredLists = useMemo(() => {
-    return data.filter((list) =>
-      list.name.toLowerCase().includes(query.toLowerCase())
-    );
-  }, [data, query]);
   //TODO: IMPLEMENTAR O FILTRO POR LABEL
 
   return (
@@ -110,7 +126,7 @@ export default function HomeScreen() {
       <ListModal
         opened={!!listSelected}
         onClose={() => {
-          setListSelected(null);
+          setListSelected(undefined);
         }}
       />
     </ThemedView>

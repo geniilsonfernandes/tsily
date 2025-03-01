@@ -1,6 +1,7 @@
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { ThemedView } from "@/components/ThemedView";
 import { ValueInput } from "@/components/ValueInput";
+import { useShoppingList } from "@/database/useShoppingList";
 import useKeyboardVisibility from "@/hooks/useKeyboardVisibility";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
@@ -70,21 +71,41 @@ export const data = [
 
 type ProductEntryProps = {
   listId: string;
+  invalidList: () => void;
 };
 
-export const ProductEntry: React.FC<ProductEntryProps> = ({ listId }) => {
+export const ProductEntry: React.FC<ProductEntryProps> = ({
+  listId,
+  invalidList,
+}) => {
   const inputRef = useRef<TextInput>(null);
   const isKeyboardVisible = useKeyboardVisibility();
+  const shoppingList = useShoppingList();
+
   const [product, setProduct] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [value, setValue] = useState("");
+
   const [showSuggestions, setShowSuggestions] = useState(false);
   const textColor = useThemeColor({}, "text");
   const placeholderTextColor = useThemeColor({}, "text.3");
 
-  const handleAddItem = () => {
-    setProduct("");
-    setQuantity("");
-  };
+  async function handleAddItem() {
+    try {
+      await shoppingList.addProduct({
+        listId,
+        product,
+        quantity: quantity || "1",
+        value: value || "0",
+      });
+      setProduct("");
+      setQuantity("");
+      setValue("");
+      invalidList();
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   const filterData = useMemo(() => {
     if (!product) {
@@ -162,7 +183,7 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({ listId }) => {
             )}
             style={styles.optionsContainer}
           >
-            <ValueInput />
+            <ValueInput value={value} onChangeText={setValue} />
             <QuantitySelector quantity={quantity} setQuantity={setQuantity} />
           </Animated.View>
         )}

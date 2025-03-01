@@ -1,10 +1,10 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { Doc, Id } from "@/convex/_generated/dataModel";
+import { Product } from "@/database/useShoppingList";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { memo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, {
   Easing,
@@ -33,19 +33,12 @@ const RightActions = (
           right: 10,
         }}
       />
-      <Text style={styles.actionText}>Excluir</Text>
     </Animated.View>
   );
 };
 
 export const ListItem = memo(
-  ({
-    item,
-    onCheck,
-  }: {
-    item: Doc<"items">;
-    onCheck: (id: Id<"items">) => void;
-  }) => {
+  ({ item, onCheck }: { item: Product; onCheck: (id: string) => void }) => {
     const [checked, setChecked] = useState(item.checked);
 
     const borderRadius = useSharedValue(12); // Valor inicial do borderRadius
@@ -95,9 +88,9 @@ export const ListItem = memo(
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
             style={[styles.button, animatedStyle]}
-            onPress={() => onCheck(item._id)}
+            onPress={() => onCheck(item.id)}
           >
-            {checked && (
+            {checked ? (
               <Animated.View
                 entering={FadeIn.duration(300).easing(
                   Easing.inOut(Easing.quad)
@@ -108,7 +101,7 @@ export const ListItem = memo(
               >
                 <Feather name="check" size={16} color="#fff" />
               </Animated.View>
-            )}
+            ) : null}
           </AnimatedPressable>
 
           <View style={styles.content}>
@@ -124,10 +117,10 @@ export const ListItem = memo(
             </ThemedText>
             <View style={styles.footer}>
               <ThemedText colorName="text.3" type="body">
-                {item.quantity}
+                {item.quantity || 1}
               </ThemedText>
               <ThemedText colorName="text.3" type="body">
-                {item.value}
+                {item.value || 0}
               </ThemedText>
             </View>
           </View>

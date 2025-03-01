@@ -3,13 +3,12 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { BackButton } from "@/components/ui/BackButton";
 import { Input } from "@/components/ui/Input";
-import { List as ListType } from "@/database/useList";
+import { useShoppingList } from "@/database/useShoppingList";
 import { useDisclosure } from "@/hooks/useDisclosure";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
-import { useSQLiteContext } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
 import {
   FlatList,
@@ -36,39 +35,6 @@ const LIST_NAME_SUGGESTIONS = [
   "Jantar Especial",
 ];
 
-const useCreateList = () => {
-  const db = useSQLiteContext();
-  const [isPedding, setIsPedding] = useState(false);
-
-  async function createList(list: Omit<ListType, "id">) {
-    setIsPedding(true);
-    const statement = await db.prepareAsync(
-      `INSERT INTO list (name, budget) VALUES ($name, $budget)`
-    );
-
-    try {
-      const result = await statement.executeAsync({
-        $name: list.name,
-        $budget: list.budget || 0,
-      });
-
-      const insertedId = result.lastInsertRowId.toString();
-
-      return { ...list, id: insertedId };
-    } catch (error) {
-      throw error;
-    } finally {
-      await statement.finalizeAsync();
-      setIsPedding(false);
-    }
-  }
-
-  return {
-    createList,
-    isPedding,
-  };
-};
-
 export default function List() {
   const [showMore, { toggle: toggleShowMore }] = useDisclosure();
   const router = useRouter();
@@ -76,7 +42,7 @@ export default function List() {
   const [listName, setListName] = useState("");
   const [listBudget, setListBudget] = useState("");
 
-  const { createList } = useCreateList();
+  const shoppingList = useShoppingList();
 
   const handleGetRandomName = useCallback(() => {
     const randomName =
@@ -101,12 +67,12 @@ export default function List() {
 
   const handleCreateList = async () => {
     try {
-      const list = await createList({
-        name: listName || LIST_NAME_SUGGESTIONS[0],
+      const id = await shoppingList.create({
+        name: listName,
         budget: Number(listBudget),
       });
 
-      router.push(`/list/${list.id}`);
+      router.push(`/list/${id.insertedRowId}`);
     } catch (error) {
       console.log(error);
     }
@@ -207,6 +173,7 @@ export default function List() {
         onPress={handleCreateList}
         accessibilityRole="button"
       >
+        <Ionicons name="sparkles" size={16} color="#dddddd" />
         <Text style={styles.createButtonText}>Criar lista</Text>
       </Pressable>
     </ThemedView>
@@ -229,9 +196,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 8,
     justifyContent: "center",
     alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
   },
   budgetContainer: { marginTop: 16 },
-  createButtonText: { color: "#fff", fontSize: 16, fontWeight: "500" },
+  createButtonText: { color: "#dddddd", fontSize: 16, fontWeight: "500" },
   icon: { alignSelf: "center", padding: 8 },
   budgetButtonContainer: { flexDirection: "row", gap: 8 },
   budgetButton: {

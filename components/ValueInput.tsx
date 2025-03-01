@@ -1,9 +1,9 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, TextInput, TextInputProps, View } from "react-native";
 
-export const ValueInput = () => {
+export const ValueInput: React.FC<TextInputProps> = (props) => {
   const backgroundColor = useThemeColor({}, "background");
   const iconColor = useThemeColor({}, "text.3");
   const textColor = useThemeColor({}, "text");
@@ -18,6 +18,7 @@ export const ValueInput = () => {
         autoCapitalize="none"
         textContentType="none"
         autoComplete="off"
+        {...props}
       />
     </View>
   );
