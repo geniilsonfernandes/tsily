@@ -1,70 +1,70 @@
-import { CreateList } from "@/components/CreateList";
 import { List } from "@/components/List";
 import { ListModal } from "@/components/ListModal";
 import { Search } from "@/components/Search";
-import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { List as ListType, useList } from "@/database/useList";
-import { useDisclosure } from "@/hooks/useDisclosure";
+import { List as ListType, useLists } from "@/database/useList";
+import { useKeyboard } from "@/hooks/useKeyboard";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
-import Animated from "react-native-reanimated";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
+import { useMemo, useState } from "react";
+import {
+  BackHandler,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function HomeScreen() {
-  const [openedCreateList, { toggle: openCreateList, close: closeCreateList }] =
-    useDisclosure();
+  const keyboardVisible = useKeyboard();
   const [listSelected, setListSelected] = useState<ListType | null>(null);
+  const [query, setQuery] = useState("");
   const router = useRouter();
-  const [listName, setListName] = useState<string>("");
-  const [shoppingLists, setShoppingLists] = useState<ListType[] | null>(null);
-  const db = useList();
 
-  const handleCreateList = async () => {
-    try {
-      await db.createList({
-        name: listName,
-      });
-      Alert.alert("Success", "List created successfully");
-    } catch (error) {
-      Alert.alert("Error", "Failed to create list");
-    }
-  };
+  const { data } = useLists();
 
-  const getLists = async () => {
-    try {
-      const lists = await db.list();
-      setShoppingLists(lists);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  useFocusEffect(() => {
+    // disable back button only on home screen
+    const backButtonHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        BackHandler.exitApp();
+        return true;
+      }
+    );
+    return () => backButtonHandler.remove();
+  });
 
-  useEffect(() => {
-    getLists();
-  }, []);
+  const filteredLists = useMemo(() => {
+    return data.filter((list) =>
+      list.name.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [data, query]);
+  //TODO: IMPLEMENTAR O FILTRO POR LABEL
 
   return (
     <ThemedView colorName="background" style={styles.container}>
-      <View style={{ paddingHorizontal: 24, marginBottom: 16 }}>
-        <View style={styles.header}>
-          <ThemedText type="title">Tsily</ThemedText>
-          <Pressable style={styles.avatar}>
-            <Feather name="user" size={24} />
-          </Pressable>
-        </View>
-
-        <Search />
+      <Stack.Screen
+        options={{
+          headerTitle: "Tsily",
+          headerTitleStyle: { fontSize: 24, fontWeight: "bold" },
+          headerShadowVisible: false,
+          headerBackVisible: false,
+          headerRight: () => (
+            <Pressable style={styles.avatar}>
+              <Feather name="user" size={24} />
+            </Pressable>
+          ),
+        }}
+      />
+      <View style={styles.header}>
+        <Search value={query} onChangeText={setQuery} />
       </View>
 
-      <Animated.FlatList
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 94, paddingHorizontal: 24 }}
-        data={Array.from({ length: 10 }).map((_, index) => ({
-          id: index.toString(),
-          name: `List ${index}`,
-        }))}
+      <FlatList
+        contentContainerStyle={styles.list}
+        data={filteredLists}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         renderItem={({ item }) => (
           <List
@@ -80,6 +80,32 @@ export default function HomeScreen() {
         )}
         keyExtractor={({ id }, index) => id}
       />
+      {/* {keyboardVisible && (
+        <View style={styles.filters}>
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            data={["Todos", "Este mês", "Mês passado", "Outros"]}
+            renderItem={({ item }) => (
+              <Pressable style={styles.filter}>
+                <Text style={styles.filterText}>{item}</Text>
+              </Pressable>
+            )}
+          />
+        </View>
+      )} */}
+      {!keyboardVisible && (
+        <Pressable
+          style={styles.createButton}
+          accessibilityRole="button"
+          onPress={() => {
+            router.push(`/list`);
+          }}
+        >
+          <Text style={styles.createButtonText}>Criar lista</Text>
+        </Pressable>
+      )}
 
       <ListModal
         opened={!!listSelected}
@@ -87,7 +113,6 @@ export default function HomeScreen() {
           setListSelected(null);
         }}
       />
-      <CreateList opened={openedCreateList} onClose={closeCreateList} />
     </ThemedView>
   );
 }
@@ -95,29 +120,37 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 64,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 96,
-    position: "relative",
+    paddingHorizontal: 16,
+    marginTop: 48,
+    marginBottom: 16,
+  },
+  list: {
+    flexGrow: 1,
+    paddingBottom: 48,
+    paddingHorizontal: 16,
   },
 
-  button: {
-    backgroundColor: "#272324",
-    borderRadius: 24,
-    height: 48,
-    width: 48,
-    justifyContent: "center",
-    alignItems: "center",
+  filters: {
+    flexDirection: "row",
     position: "absolute",
-    bottom: 24,
-    alignSelf: "center",
+    bottom: 16,
+    gap: 8,
+    paddingHorizontal: 16,
   },
-  buttonText: {
-    textAlign: "center",
+  filter: {
+    padding: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: "rgb(234, 234, 234)",
+    borderWidth: 1,
+    borderColor: "#DBDBDB",
+    marginRight: 8,
+  },
+  filterText: {
+    color: "rgb(78, 78, 78)",
+    fontSize: 16,
   },
 
   avatar: {
@@ -135,12 +168,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
-    marginHorizontal: 24,
+    marginHorizontal: 16,
     position: "absolute",
+
     bottom: 16,
     alignSelf: "center",
-    width: "90%",
-
+    paddingHorizontal: 48,
     alignItems: "center",
   },
   createButtonText: {
