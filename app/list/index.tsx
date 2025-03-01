@@ -1,12 +1,15 @@
 import { Chip } from "@/components/Chip";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { BackButton } from "@/components/ui/BackButton";
 import { Input } from "@/components/ui/Input";
+import { List as ListType } from "@/database/useList";
 import { useDisclosure } from "@/hooks/useDisclosure";
 import { Feather } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
 import {
   FlatList,
@@ -33,12 +36,47 @@ const LIST_NAME_SUGGESTIONS = [
   "Jantar Especial",
 ];
 
+const useCreateList = () => {
+  const db = useSQLiteContext();
+  const [isPedding, setIsPedding] = useState(false);
+
+  async function createList(list: Omit<ListType, "id">) {
+    setIsPedding(true);
+    const statement = await db.prepareAsync(
+      `INSERT INTO list (name, budget) VALUES ($name, $budget)`
+    );
+
+    try {
+      const result = await statement.executeAsync({
+        $name: list.name,
+        $budget: list.budget || 0,
+      });
+
+      const insertedId = result.lastInsertRowId.toString();
+
+      return { ...list, id: insertedId };
+    } catch (error) {
+      throw error;
+    } finally {
+      await statement.finalizeAsync();
+      setIsPedding(false);
+    }
+  }
+
+  return {
+    createList,
+    isPedding,
+  };
+};
+
 export default function List() {
-  const router = useRouter();
   const [showMore, { toggle: toggleShowMore }] = useDisclosure();
+  const router = useRouter();
+
   const [listName, setListName] = useState("");
   const [listBudget, setListBudget] = useState("");
-  const [isError, setIsError] = useState(false);
+
+  const { createList } = useCreateList();
 
   const handleGetRandomName = useCallback(() => {
     const randomName =
@@ -61,17 +99,26 @@ export default function List() {
     });
   }, []);
 
+  const handleCreateList = async () => {
+    try {
+      const list = await createList({
+        name: listName || LIST_NAME_SUGGESTIONS[0],
+        budget: Number(listBudget),
+      });
+
+      router.push(`/list/${list.id}`);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <ThemedView colorName="background" style={styles.container}>
       <Stack.Screen
         options={{
           headerTitle: "",
           headerShadowVisible: false,
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()}>
-              <Feather name="chevron-left" size={24} />
-            </Pressable>
-          ),
+          headerLeft: () => <BackButton />,
         }}
       />
       <View>
@@ -86,12 +133,10 @@ export default function List() {
           placeholder="Nome da lista"
           value={listName}
           onChangeText={(text) => {
-            setIsError(false);
             setListName(text);
           }}
           iconName="repeat"
           onIconPress={handleGetRandomName}
-          isError={isError}
         />
         <ThemedText
           type="body"
@@ -157,11 +202,13 @@ export default function List() {
           color="#C5C5C5"
         />
       </View>
-      <View>
-        <Pressable style={styles.createButton} accessibilityRole="button">
-          <Text style={styles.createButtonText}>Criar lista</Text>
-        </Pressable>
-      </View>
+      <Pressable
+        style={styles.createButton}
+        onPress={handleCreateList}
+        accessibilityRole="button"
+      >
+        <Text style={styles.createButtonText}>Criar lista</Text>
+      </Pressable>
     </ThemedView>
   );
 }
@@ -177,20 +224,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#4E4E4E",
     height: 48,
     borderRadius: 16,
+    width: "100%",
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
-  createButtonText: { color: "#fff", fontSize: 16, fontWeight: "500" },
   budgetContainer: { marginTop: 16 },
+  createButtonText: { color: "#fff", fontSize: 16, fontWeight: "500" },
   icon: { alignSelf: "center", padding: 8 },
   budgetButtonContainer: { flexDirection: "row", gap: 8 },
   budgetButton: {
     backgroundColor: "#FFF",
     width: 40,
     height: 40,
-    borderRadius: 16,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
