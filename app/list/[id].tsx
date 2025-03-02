@@ -2,41 +2,56 @@ import { ListItem } from "@/components/ListItem";
 import { ListOptions } from "@/components/ListOptions";
 import { ProductEntry } from "@/components/ProductEntry";
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { BackButton } from "@/components/ui/BackButton";
-import { List, Product, useShoppingList } from "@/database/useShoppingList";
+import { List, useShoppingList } from "@/database/useShoppingList";
 import { Stack, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 export default function ListView() {
   const { id } = useLocalSearchParams() as { id: string };
-  const [data, setData] = useState<List>();
+  const [data, setData] = useState<List | null>(null);
   const shoppingList = useShoppingList();
 
-  async function list() {
+  const fetchList = useCallback(async () => {
     try {
       const response = await shoppingList.findById(id);
-      if (!response) {
-        return;
+      if (response) {
+        setData(response);
       }
-      setData(response);
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching list:", error);
     }
-  }
+  }, [id, shoppingList]);
 
-  const renderProduct = useCallback(
-    ({ item }: { item: Product; index: number }) => {
-      return <ListItem item={item} onCheck={(id) => console.log(id)} />;
+  const handleCheckProduct = useCallback(
+    async (productId: string, checked: boolean) => {
+      try {
+        await shoppingList.checkProduct({ id: productId, checked });
+        fetchList();
+      } catch (error) {
+        console.error("Error checking product:", error);
+      }
     },
-    []
+    [fetchList, shoppingList]
+  );
+
+  const handleDeleteProduct = useCallback(
+    async (productId: string) => {
+      try {
+        await shoppingList.deleteProduct(productId);
+        fetchList();
+      } catch (error) {
+        console.error("Error deleting product:", error);
+      }
+    },
+    [fetchList, shoppingList]
   );
 
   useEffect(() => {
-    list();
-  }, []);
+    fetchList();
+  }, [fetchList]);
 
   return (
     <View style={styles.container}>
@@ -54,29 +69,28 @@ export default function ListView() {
         </ThemedText>
         <View style={styles.stats}>
           <ThemedText colorName="text.3" type="body">
-            30 produtos
+            {data?.products.length || 0} produtos
           </ThemedText>
           {data?.budget ? (
             <ThemedText colorName="text.3" type="body">
-              {data?.budget} / 120,00
+              {data.budget} / 120,00
             </ThemedText>
           ) : null}
         </View>
       </View>
-
       <Animated.FlatList
-        contentContainerStyle={{ paddingBottom: 124 }}
-        data={data?.products}
-        renderItem={renderProduct}
+        data={data?.products || []}
         keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={() => (
-          <ThemedView
-            colorName="background.2"
-            style={{ height: 1, marginVertical: 8, marginHorizontal: 24 }}
+        itemLayoutAnimation={LinearTransition}
+        renderItem={({ item }) => (
+          <ListItem
+            item={item}
+            onCheck={handleCheckProduct}
+            onDelete={handleDeleteProduct}
           />
         )}
       />
-      <ProductEntry listId={id} invalidList={list} />
+      <ProductEntry listId={id} invalidList={fetchList} />
     </View>
   );
 }
@@ -84,9 +98,9 @@ export default function ListView() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 16,
   },
   header: {
-    paddingHorizontal: 24,
     paddingTop: 12,
     paddingBottom: 16,
   },
@@ -96,14 +110,5 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: "space-between",
     marginTop: 8,
-  },
-  listContainer: {
-    flex: 1,
-  },
-  contentContainer: {
-    flex: 1,
-    padding: 36,
-    paddingVertical: 124,
-    alignItems: "center",
   },
 });
