@@ -1,177 +1,139 @@
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { Product } from "@/database/useShoppingList";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
-import React, { memo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import React, { memo, useCallback, useState } from "react";
+import { Pressable, StyleSheet } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, {
-  Easing,
+  BounceIn,
   FadeIn,
-  FadeOut,
+  FadeOutLeft,
+  interpolateColor,
   SharedValue,
   useAnimatedStyle,
-  useSharedValue,
-  withSpring,
 } from "react-native-reanimated";
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const RightAction = ({ progress }: { progress: SharedValue<number> }) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      progress.value,
+      [0, 0.5],
+      ["white", "red"]
+    );
+    return { backgroundColor };
+  });
 
-const RightActions = (
-  progress: SharedValue<number>,
-  dragX: SharedValue<number>
-) => {
   return (
-    <Animated.View style={[styles.action, { backgroundColor: "#F96868" }]}>
-      <Feather
-        name="trash-2"
-        size={16}
-        color="#fff"
-        style={{
-          position: "absolute",
-          right: 10,
-        }}
-      />
+    <Animated.View style={[styles.rightAction, animatedStyle]}>
+      <Feather name="trash-2" size={18} color="white" />
     </Animated.View>
   );
 };
 
 export const ListItem = memo(
-  ({ item, onCheck }: { item: Product; onCheck: (id: string) => void }) => {
+  ({
+    item,
+    onCheck,
+    onDelete,
+  }: {
+    item: Product;
+    onCheck: (id: string, checked: boolean) => void;
+    onDelete: (id: string) => void;
+  }) => {
     const [checked, setChecked] = useState(item.checked);
+    const backgroundColor = useThemeColor({}, "background");
+    const checkedColorBorder = useThemeColor({}, "success");
+    const uncheckedColorBorder = useThemeColor({}, "text.7");
 
-    const borderRadius = useSharedValue(12); // Valor inicial do borderRadius
-    const backgroundColor = useSharedValue("transparent");
-    const borderColor = useSharedValue("#DEDEDE");
+    const handleCheck = useCallback(() => {
+      setChecked((prev) => !prev);
+      onCheck(item.id, !checked);
+    }, [checked, onCheck, item.id]);
 
-    const animatedStyle = useAnimatedStyle(() => ({
-      borderRadius: withSpring(borderRadius.value, {
-        damping: 10,
-        stiffness: 100,
-      }),
-      backgroundColor: withSpring(backgroundColor.value, {
-        damping: 10,
-        stiffness: 100,
-      }),
-      borderColor: withSpring(borderColor.value, {
-        damping: 10,
-        stiffness: 100,
-      }),
-    }));
-
-    const handlePressIn = () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
-      setChecked(!checked);
-      if (checked) {
-        backgroundColor.value = "transparent";
-        borderColor.value = "#DEDEDE";
-      } else {
-        backgroundColor.value = "#7faf76";
-        borderColor.value = "#7faf76";
-      }
-      borderRadius.value = 8; // Altera o borderRadius durante o press
-    };
-
-    const handlePressOut = () => {
-      borderRadius.value = 12; // Volta ao borderRadius original
-    };
+    const handleSwipeToDelete = useCallback(() => {
+      onDelete(item.id);
+    }, [item.id, onDelete]);
 
     return (
       <ReanimatedSwipeable
-        renderRightActions={RightActions}
         friction={2}
-        rightThreshold={200}
+        enableTrackpadTwoFingerGesture
+        rightThreshold={100}
+        onSwipeableWillOpen={handleSwipeToDelete}
+        renderRightActions={(progress) => <RightAction progress={progress} />}
       >
-        <ThemedView style={styles.container}>
-          <AnimatedPressable
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            style={[styles.button, animatedStyle]}
-            onPress={() => onCheck(item.id)}
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOutLeft.duration(300).delay(400)}
+          style={[styles.container, { backgroundColor }]}
+        >
+          <Pressable
+            style={[
+              styles.check,
+              checked
+                ? {
+                    borderColor: checkedColorBorder,
+                    backgroundColor: checkedColorBorder,
+                  }
+                : { borderColor: uncheckedColorBorder },
+            ]}
+            onPress={handleCheck}
           >
             {checked ? (
-              <Animated.View
-                entering={FadeIn.duration(300).easing(
-                  Easing.inOut(Easing.quad)
-                )}
-                exiting={FadeOut.duration(300).easing(
-                  Easing.inOut(Easing.quad)
-                )}
-              >
+              <Animated.View entering={BounceIn.duration(300)}>
                 <Feather name="check" size={16} color="#fff" />
               </Animated.View>
-            ) : null}
-          </AnimatedPressable>
-
-          <View style={styles.content}>
-            <ThemedText
-              colorName="text.1"
-              type="body"
-              style={{
-                textDecorationLine: checked ? "line-through" : "none",
-                opacity: checked ? 0.5 : 1,
-              }}
-            >
-              {item.name}
-            </ThemedText>
-            <View style={styles.footer}>
-              <ThemedText colorName="text.3" type="body">
-                {item.quantity || 1}
-              </ThemedText>
-              <ThemedText colorName="text.3" type="body">
-                {item.value || 0}
-              </ThemedText>
-            </View>
-          </View>
-        </ThemedView>
+            ) : (
+              <Animated.View entering={FadeIn.duration(300)}>
+                <Feather name="circle" size={16} color="#fff" />
+              </Animated.View>
+            )}
+          </Pressable>
+          <ThemedText
+            colorName="text.1"
+            type="body"
+            style={{
+              textDecorationLine: checked ? "line-through" : "none",
+              opacity: checked ? 0.5 : 1,
+              flex: 1,
+            }}
+          >
+            {item.name}
+          </ThemedText>
+          <ThemedText colorName="text.3" type="body">
+            {item.quantity || 1}
+          </ThemedText>
+          <ThemedText colorName="text.3" type="body">
+            {item.value || 0}
+          </ThemedText>
+        </Animated.View>
       </ReanimatedSwipeable>
     );
   }
 );
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     paddingVertical: 8,
-    paddingHorizontal: 24,
   },
-  content: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  button: {
+  check: {
     height: 24,
     width: 24,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
+    borderRadius: 8,
   },
-  text: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  action: {
-    width: "90%",
+  rightAction: {
+    borderRadius: 8,
     justifyContent: "center",
-    alignItems: "center",
+    paddingHorizontal: 8,
+    alignItems: "flex-end",
+    width: "100%",
     height: "100%",
-    paddingHorizontal: 16,
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
-    marginHorizontal: 24,
-  },
-  actionText: {
-    color: "white",
-    fontSize: 16,
   },
 });
