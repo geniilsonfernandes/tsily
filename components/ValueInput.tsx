@@ -1,18 +1,28 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, TextInput, TextInputProps, View } from "react-native";
+import { StyleSheet, TextInput, TextInputProps } from "react-native";
+import { ThemedView } from "./ThemedView";
 
 export const ValueInput: React.FC<TextInputProps> = (props) => {
   const backgroundColor = useThemeColor({}, "background");
+  const backgroundColorInput = useThemeColor({}, "background.1");
   const iconColor = useThemeColor({}, "text.3");
   const textColor = useThemeColor({}, "text");
   return (
-    <View style={[styles.input, { backgroundColor }]}>
+    <ThemedView
+      backgroundColor="background.1"
+      borderColor="background.2"
+      style={styles.input}
+    >
       <Feather name="dollar-sign" size={18} color={iconColor} />
       <TextInput
         placeholder="valor"
-        style={{ flex: 1, color: textColor }}
+        style={{
+          flex: 1,
+          color: textColor,
+          fontSize: 16,
+        }}
         keyboardType="numeric"
         autoCorrect={false}
         autoCapitalize="none"
@@ -20,7 +30,7 @@ export const ValueInput: React.FC<TextInputProps> = (props) => {
         autoComplete="off"
         {...props}
       />
-    </View>
+    </ThemedView>
   );
 };
 
@@ -32,8 +42,5 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 10,
     paddingHorizontal: 8,
-    backgroundColor: "#5B5B5B",
-    borderColor: "#DBDBDB",
-    borderWidth: 1,
   },
 });

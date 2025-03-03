@@ -1,13 +1,20 @@
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { ThemedView } from "@/components/ThemedView";
 import { ValueInput } from "@/components/ValueInput";
-import { useShoppingList } from "@/database/useShoppingList";
+import { List, Product, useShoppingList } from "@/database/useShoppingList";
 import useKeyboardVisibility from "@/hooks/useKeyboardVisibility";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import useStore from "@/store/useStore";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Dimensions,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
 import Animated, {
   BounceIn,
   BounceOut,
@@ -72,12 +79,16 @@ export const data = [
 type ProductEntryProps = {
   listId: string;
   invalidList: () => void;
+  list: List | null;
+  productToEdit?: Product;
 };
 
 export const ProductEntry: React.FC<ProductEntryProps> = ({
   listId,
   invalidList,
+  list,
 }) => {
+  const { selectedProduct, removeSelectedProduct } = useStore();
   const inputRef = useRef<TextInput>(null);
   const isKeyboardVisible = useKeyboardVisibility();
   const shoppingList = useShoppingList();
@@ -91,6 +102,27 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
   const placeholderTextColor = useThemeColor({}, "text.3");
 
   async function handleAddItem() {
+    if (selectedProduct) {
+      try {
+        await shoppingList.updateProduct({
+          id: selectedProduct.id,
+          checked: selectedProduct.checked,
+          list_id: selectedProduct.list_id,
+          name: product,
+          quantity: quantity || "1",
+          value: value || "0",
+        });
+        setProduct("");
+        setQuantity("");
+        setValue("");
+        invalidList();
+        removeSelectedProduct();
+      } catch (error) {
+        console.log(error);
+      }
+      return;
+    }
+
     try {
       await shoppingList.addProduct({
         listId,
@@ -116,6 +148,15 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
     );
   }, [product]);
 
+  useEffect(() => {
+    if (selectedProduct) {
+      setProduct(selectedProduct.name);
+      setQuantity(selectedProduct.quantity);
+      setValue(selectedProduct.value);
+      inputRef.current?.focus();
+    }
+  }, [selectedProduct]);
+
   return (
     <View style={styles.container}>
       {showSuggestions && (
@@ -128,7 +169,7 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
         />
       )}
       <ThemedView
-        backgroundColor="background.1"
+        backgroundColor="background"
         borderColor="background.3"
         style={styles.createSheet}
       >
@@ -140,7 +181,7 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
               setShowSuggestions(true);
               setProduct(value);
             }}
-            style={{ flex: 1, color: textColor, height: 38 }}
+            style={{ flex: 1, color: textColor, height: 38, fontSize: 16 }}
             placeholderTextColor={placeholderTextColor}
             ref={inputRef}
           />
@@ -197,7 +238,7 @@ const styles = StyleSheet.create({
     padding: 8,
     bottom: 0,
     position: "absolute",
-    width: "100%",
+    width: Dimensions.get("window").width,
   },
   createSheet: {
     width: "100%",

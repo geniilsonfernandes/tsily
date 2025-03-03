@@ -3,6 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React from "react";
 import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { ThemedView } from "./ThemedView";
 
 type QuantitySelectorProps = {
   quantity: string;
@@ -12,7 +13,7 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   quantity,
   setQuantity,
 }) => {
-  const backgroundColor = useThemeColor({}, "background");
+  const backgroundColor = useThemeColor({}, "background.1");
   const iconColor = useThemeColor({}, "text.3");
   const textColor = useThemeColor({}, "text");
   const handleDecrease = () => {
@@ -29,7 +30,11 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
 
   return (
     <View style={styles.constainer}>
-      <View style={[styles.input, { backgroundColor }]}>
+      <ThemedView
+        backgroundColor="background.1"
+        borderColor="background.2"
+        style={styles.input}
+      >
         <Feather name="shopping-bag" size={18} color={iconColor} />
         <TextInput
           placeholder="quant."
@@ -37,12 +42,12 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
           autoCapitalize="none"
           textContentType="none"
           autoComplete="off"
-          style={{ flex: 1, color: textColor }}
+          style={{ flex: 1, color: textColor, fontSize: 16 }}
           value={quantity.toString()}
           onChangeText={setQuantity}
           keyboardType="numeric"
         />
-      </View>
+      </ThemedView>
       <TouchableOpacity
         style={[styles.button, { backgroundColor }]}
         onPress={handleDecrease}
@@ -73,9 +78,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     height: 42,
     paddingHorizontal: 8,
-    backgroundColor: "#5B5B5B",
-    borderColor: "#DBDBDB",
-    borderWidth: 1,
   },
   button: {
     flexDirection: "row",
