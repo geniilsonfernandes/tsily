@@ -51,6 +51,7 @@ export const Colors = {
     tabIconDefault: "#687076",
     tabIconSelected: tintColorLight,
     danger: "#F96868",
+    success: "rgb(87, 206, 87)",
     ...gray,
   },
   dark: {
@@ -81,6 +82,7 @@ export const Colors = {
     tabIconDefault: "#9BA1A6",
     tabIconSelected: tintColorDark,
     danger: "#F96868",
+    success: "rgb(87, 206, 87)",
     ...gray,
   },
 };

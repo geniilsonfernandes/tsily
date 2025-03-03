@@ -37,9 +37,9 @@ export const BackButton: React.FC<BackButtonProps> = ({ to }) => {
 
 const styles = StyleSheet.create({
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,

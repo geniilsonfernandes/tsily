@@ -18,12 +18,12 @@ export const ListOptions: React.FC<ListOptionsProps> = ({ onOpenSheet }) => {
 
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-      <Pressable>
+      {/* <Pressable>
         <Feather name="user-plus" size={18} />
       </Pressable>
       <Pressable>
         <Feather name="share-2" size={18} />
-      </Pressable>
+      </Pressable> */}
       <Pressable
         onPress={() => {
           setModalVisible(true);
@@ -31,7 +31,6 @@ export const ListOptions: React.FC<ListOptionsProps> = ({ onOpenSheet }) => {
       >
         <Feather name="trash" size={18} color="#F96868" />
       </Pressable>
-   
 
       <Modal
         statusBarTranslucent={true}

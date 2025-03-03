@@ -1,14 +1,23 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, TextInput, TextInputProps } from "react-native";
+import { StyleSheet } from "react-native";
+import CurrencyInput from "react-native-currency-input";
+
 import { ThemedView } from "./ThemedView";
 
-export const ValueInput: React.FC<TextInputProps> = (props) => {
-  const backgroundColor = useThemeColor({}, "background");
-  const backgroundColorInput = useThemeColor({}, "background.1");
+type ValueInputProps = {
+  value: number | null;
+  onChangeValue: (value: number | null) => void;
+};
+
+export const ValueInput: React.FC<ValueInputProps> = ({
+  onChangeValue,
+  value,
+}) => {
   const iconColor = useThemeColor({}, "text.3");
   const textColor = useThemeColor({}, "text");
+
   return (
     <ThemedView
       backgroundColor="background.1"
@@ -16,8 +25,8 @@ export const ValueInput: React.FC<TextInputProps> = (props) => {
       style={styles.input}
     >
       <Feather name="dollar-sign" size={18} color={iconColor} />
-      <TextInput
-        placeholder="valor"
+      <CurrencyInput
+        placeholder="0,00"
         style={{
           flex: 1,
           color: textColor,
@@ -28,7 +37,10 @@ export const ValueInput: React.FC<TextInputProps> = (props) => {
         autoCapitalize="none"
         textContentType="none"
         autoComplete="off"
-        {...props}
+        value={value}
+        onChangeValue={onChangeValue}
+
+        // {...props}
       />
     </ThemedView>
   );

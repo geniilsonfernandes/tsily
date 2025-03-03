@@ -17,7 +17,7 @@ export const Chip: React.FC<ChipProps> = ({ label, active }) => {
     >
       <ThemedText
         colorName={active ? "text.1" : "text.4"}
-        style={{ fontSize: 14 }}
+        style={{ fontSize: 16 }}
       >
         {label}
       </ThemedText>

@@ -1,77 +1,65 @@
 import { ThemedText } from "@/components/ThemedText";
-import { Product } from "@/database/useShoppingList";
+import {
+  Product as ProductType,
+  useShoppingList,
+} from "@/database/useShoppingList";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Feather } from "@expo/vector-icons";
-import React, { memo, useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import { Pressable, StyleSheet } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, {
   BounceIn,
   FadeIn,
-  FadeOutLeft,
-  interpolateColor,
   SharedValue,
-  useAnimatedStyle,
 } from "react-native-reanimated";
+import { ThemedView } from "./ThemedView";
 
 const RightAction = ({ progress }: { progress: SharedValue<number> }) => {
-  const animatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolateColor(
-      progress.value,
-      [0, 0.5],
-      ["white", "red"]
-    );
-    return { backgroundColor };
-  });
-
   return (
-    <Animated.View style={[styles.rightAction, animatedStyle]}>
+    <ThemedView backgroundColor="danger" style={[styles.rightAction]}>
       <Feather name="trash-2" size={18} color="white" />
-    </Animated.View>
+    </ThemedView>
   );
 };
 
-export const ListItem = memo(
-  ({
-    item,
-    onCheck,
-    onDelete,
-  }: {
-    item: Product;
-    onCheck: (id: string, checked: boolean) => void;
-    onDelete: (id: string) => void;
-  }) => {
-    const [checked, setChecked] = useState(item.checked);
-    const backgroundColor = useThemeColor({}, "background");
+type ProductProps = {
+  invalidateList?: () => void;
+} & ProductType;
+
+export const Product: React.FC<ProductProps> = React.memo(
+  ({ id, name, quantity, checked, value, invalidateList }) => {
+    const shoppingList = useShoppingList();
+    const [isChecked, setIsChecked] = React.useState(checked);
+
     const checkedColorBorder = useThemeColor({}, "success");
     const uncheckedColorBorder = useThemeColor({}, "text.7");
 
-    const handleCheck = useCallback(() => {
-      setChecked((prev) => !prev);
-      onCheck(item.id, !checked);
-    }, [checked, onCheck, item.id]);
+    const handleCheck = useCallback(async () => {
+      await shoppingList.checkProduct({ id, checked: !isChecked });
+      setIsChecked(!isChecked);
+    }, [id, isChecked]);
 
-    const handleSwipeToDelete = useCallback(() => {
-      onDelete(item.id);
-    }, [item.id, onDelete]);
+    const handleSwipeToDelete = useCallback(async () => {
+      await shoppingList.deleteProduct(id);
+      invalidateList && invalidateList();
+    }, [id]);
 
     return (
       <ReanimatedSwipeable
         friction={2}
         enableTrackpadTwoFingerGesture
         rightThreshold={100}
+        overshootLeft={true}
+        renderLeftActions={() => null}
         onSwipeableWillOpen={handleSwipeToDelete}
         renderRightActions={(progress) => <RightAction progress={progress} />}
       >
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          exiting={FadeOutLeft.duration(300).delay(400)}
-          style={[styles.container, { backgroundColor }]}
-        >
+        <ThemedView backgroundColor="background" style={styles.container}>
           <Pressable
             style={[
               styles.check,
-              checked
+              isChecked
                 ? {
                     borderColor: checkedColorBorder,
                     backgroundColor: checkedColorBorder,
@@ -80,7 +68,7 @@ export const ListItem = memo(
             ]}
             onPress={handleCheck}
           >
-            {checked ? (
+            {isChecked ? (
               <Animated.View entering={BounceIn.duration(300)}>
                 <Feather name="check" size={16} color="#fff" />
               </Animated.View>
@@ -94,20 +82,20 @@ export const ListItem = memo(
             colorName="text.1"
             type="body"
             style={{
-              textDecorationLine: checked ? "line-through" : "none",
-              opacity: checked ? 0.5 : 1,
+              textDecorationLine: isChecked ? "line-through" : "none",
+              opacity: isChecked ? 0.5 : 1,
               flex: 1,
             }}
           >
-            {item.name}
+            {name}
           </ThemedText>
           <ThemedText colorName="text.3" type="body">
-            {item.quantity || 1}
+            {quantity || 1}
           </ThemedText>
           <ThemedText colorName="text.3" type="body">
-            {item.value || 0}
+            {value || 0}
           </ThemedText>
-        </Animated.View>
+        </ThemedView>
       </ReanimatedSwipeable>
     );
   }
@@ -119,6 +107,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingVertical: 8,
+    paddingRight: 8,
   },
   check: {
     height: 24,

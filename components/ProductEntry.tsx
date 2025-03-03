@@ -6,7 +6,6 @@ import useKeyboardVisibility from "@/hooks/useKeyboardVisibility";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import useStore from "@/store/useStore";
 import { Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
@@ -94,59 +93,11 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
   const shoppingList = useShoppingList();
 
   const [product, setProduct] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [value, setValue] = useState("");
-
+  const [quantity, setQuantity] = useState<number>(1);
+  const [value, setValue] = useState<number | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const textColor = useThemeColor({}, "text");
   const placeholderTextColor = useThemeColor({}, "text.3");
-
-  async function handleAddItem() {
-    if (selectedProduct) {
-      try {
-        await shoppingList.updateProduct({
-          id: selectedProduct.id,
-          checked: selectedProduct.checked,
-          list_id: selectedProduct.list_id,
-          name: product,
-          quantity: quantity || "1",
-          value: value || "0",
-        });
-        setProduct("");
-        setQuantity("");
-        setValue("");
-        invalidList();
-        removeSelectedProduct();
-      } catch (error) {
-        console.log(error);
-      }
-      return;
-    }
-
-    try {
-      await shoppingList.addProduct({
-        listId,
-        product,
-        quantity: quantity || "1",
-        value: value || "0",
-      });
-      setProduct("");
-      setQuantity("");
-      setValue("");
-      invalidList();
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  const filterData = useMemo(() => {
-    if (!product) {
-      return [];
-    }
-    return data.filter((item) =>
-      item.toLowerCase().includes(product.toLowerCase())
-    );
-  }, [product]);
 
   useEffect(() => {
     if (selectedProduct) {
@@ -157,17 +108,82 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
     }
   }, [selectedProduct]);
 
+  const handleAddItem = async () => {
+    if (!product.trim()) return;
+
+    try {
+      const productIsInList = list?.products.find(
+        (p) => p.name.toLowerCase() === product.toLowerCase()
+      );
+
+      if (productIsInList) {
+        await shoppingList.updateProduct({
+          id: productIsInList.id,
+          checked: productIsInList.checked,
+          list_id: productIsInList.list_id,
+          name: product,
+          quantity: quantity || 1,
+          value: value || 0,
+        });
+      } else if (selectedProduct) {
+        await shoppingList.updateProduct({
+          id: selectedProduct.id,
+          checked: selectedProduct.checked,
+          list_id: selectedProduct.list_id,
+          name: product,
+          quantity: quantity || 1,
+          value: value || 0,
+        });
+        removeSelectedProduct();
+      } else {
+        await shoppingList.addProduct({
+          list_id: listId,
+          name: product,
+          quantity: quantity || 1,
+          value: value || 0,
+          checked: false,
+        });
+      }
+      setProduct("");
+      setQuantity(1);
+      setValue(null);
+      invalidList();
+    } catch (error) {
+      console.error("Error adding/updating product:", error);
+    }
+  };
+
+  const filterData = useMemo(
+    () =>
+      product
+        ? data.filter((item) =>
+            item.toLowerCase().includes(product.toLowerCase())
+          )
+        : data.slice(0, 10),
+    [product]
+  );
+
+  const findProductInList = (product: string) => {
+    const productIsInList = list?.products.find(
+      (p) => p.name.toLowerCase() === product.toLowerCase()
+    );
+    if (productIsInList) {
+      setProduct(productIsInList.name);
+
+      setQuantity(productIsInList.quantity);
+      setValue(productIsInList.value);
+    } else {
+      setProduct(product);
+    }
+
+    setShowSuggestions(false);
+
+    return productIsInList;
+  };
+
   return (
     <View style={styles.container}>
-      {showSuggestions && (
-        <Suggestions
-          onSelect={(suggestion) => {
-            setProduct(suggestion);
-            setShowSuggestions(false);
-          }}
-          suggestions={filterData}
-        />
-      )}
+      <Suggestions onSelect={findProductInList} suggestions={filterData} />
       <ThemedView
         backgroundColor="background"
         borderColor="background.3"
@@ -175,7 +191,7 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
       >
         <View style={styles.inputContainer}>
           <TextInput
-            placeholder="Arroz japones"
+            placeholder="Digite o nome do produto"
             value={product}
             onChangeText={(value) => {
               setShowSuggestions(true);
@@ -185,20 +201,16 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
             placeholderTextColor={placeholderTextColor}
             ref={inputRef}
           />
-
           <Pressable
-            pointerEvents={product ? "auto" : "none"}
             onPress={() => {
-              Haptics.selectionAsync();
-              handleAddItem();
+              if (product) {
+                handleAddItem();
+              } else {
+                setShowSuggestions(true);
+              }
             }}
             disabled={!product}
-            style={() => [
-              {
-                position: "absolute",
-                right: 4,
-              },
-            ]}
+            style={styles.addButtonContainer}
           >
             <Animated.View
               entering={BounceIn.delay(300)
@@ -210,7 +222,7 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
               style={styles.addButton}
             >
               <Feather
-                name={product ? "check" : "search"}
+                name={product ? "check" : "shopping-bag"}
                 size={16}
                 color="#DEDEDE"
               />
@@ -224,8 +236,11 @@ export const ProductEntry: React.FC<ProductEntryProps> = ({
             )}
             style={styles.optionsContainer}
           >
-            <ValueInput value={value} onChangeText={setValue} />
-            <QuantitySelector quantity={quantity} setQuantity={setQuantity} />
+            <ValueInput value={value} onChangeValue={setValue} />
+            <QuantitySelector
+              quantity={quantity}
+              onChangeQuantity={setQuantity}
+            />
           </Animated.View>
         )}
       </ThemedView>
@@ -242,10 +257,12 @@ const styles = StyleSheet.create({
   },
   createSheet: {
     width: "100%",
-    padding: 4,
+    padding: 8,
     borderRadius: 16,
-    borderTopEndRadius: 24,
-    borderBottomRightRadius: 24,
+  },
+  addButtonContainer: {
+    position: "absolute",
+    right: 4,
   },
   addButton: {
     padding: 8,
@@ -258,7 +275,6 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 4,
   },
-
   optionsContainer: {
     flexDirection: "row",
     paddingTop: 8,

@@ -12,8 +12,8 @@ export type Product = {
   list_id: string;
   checked: boolean;
   name: string;
-  value: string;
-  quantity: string;
+  value: number;
+  quantity: number;
 };
 
 export function useShoppingList() {
@@ -40,25 +40,67 @@ export function useShoppingList() {
     }
   }
 
-  async function addProduct(data: {
-    listId: string;
-    product: string;
-    quantity: string;
-    value: string;
-  }) {
+  // product methods
+  async function addProduct(data: Omit<Product, "id">) {
     const statement = await database.prepareAsync(
       `INSERT INTO product (list_id, name, quantity, value, checked) VALUES ($list_id, $name, $quantity, $value, $checked)`
     );
     try {
       const result = await statement.executeAsync({
-        $list_id: data.listId,
-        $name: data.product,
+        $list_id: data.list_id,
+        $name: data.name,
         $quantity: data.quantity,
         $value: data.value,
         $checked: false,
       });
 
       return result;
+    } catch (error) {
+      throw error;
+    } finally {
+      await statement.finalizeAsync();
+    }
+  }
+
+  async function checkProduct(data: { id: string; checked: boolean }) {
+    const statement = await database.prepareAsync(
+      `UPDATE product SET checked = $checked WHERE id = $id`
+    );
+    try {
+      const result = await statement.executeAsync({
+        $id: data.id,
+        $checked: data.checked,
+      });
+
+      return result;
+    } catch (error) {
+      throw error;
+    } finally {
+      await statement.finalizeAsync();
+    }
+  }
+
+  async function deleteProduct(id: string) {
+    try {
+      await database.execAsync("DELETE FROM product WHERE id = " + id);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function updateProduct(data: Product) {
+    console.log(data);
+
+    const statement = await database.prepareAsync(
+      `UPDATE product SET name = $name, quantity = $quantity, value = $value WHERE id = $id`
+    );
+    try {
+      await statement.executeAsync({
+        $id: data.id,
+        $name: data.name,
+        $quantity: data.quantity,
+        $value: data.value,
+      });
     } catch (error) {
       throw error;
     } finally {
@@ -161,5 +203,8 @@ export function useShoppingList() {
     list,
     findById,
     addProduct,
+    checkProduct,
+    deleteProduct,
+    updateProduct,
   };
 }

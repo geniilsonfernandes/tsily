@@ -6,54 +6,63 @@ import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { ThemedView } from "./ThemedView";
 
 type QuantitySelectorProps = {
-  quantity: string;
-  setQuantity: React.Dispatch<React.SetStateAction<string>>;
+  quantity: number | null;
+  onChangeQuantity: (value: number) => void;
 };
+
 export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   quantity,
-  setQuantity,
+  onChangeQuantity,
 }) => {
   const backgroundColor = useThemeColor({}, "background.1");
   const iconColor = useThemeColor({}, "text.3");
   const textColor = useThemeColor({}, "text");
+
   const handleDecrease = () => {
     Haptics.selectionAsync();
-    if (+quantity > 0) {
-      setQuantity((prev) => String(Math.max(0, +prev - 1)));
-    }
+    onChangeQuantity(quantity ? quantity - 1 : 0);
   };
 
   const handleIncrease = () => {
     Haptics.selectionAsync();
-    setQuantity((prev) => String(+prev + 1));
+    onChangeQuantity(quantity ? quantity + 1 : 1);
+  };
+
+  const handleChangeText = (text: string) => {
+    const numericValue = parseInt(text.replace(/[^0-9]/g, ""), 10);
+    onChangeQuantity(isNaN(numericValue) ? 0 : numericValue);
   };
 
   return (
-    <View style={styles.constainer}>
-      <ThemedView
-        backgroundColor="background.1"
-        borderColor="background.2"
-        style={styles.input}
-      >
-        <Feather name="shopping-bag" size={18} color={iconColor} />
-        <TextInput
-          placeholder="quant."
-          autoCorrect={false}
-          autoCapitalize="none"
-          textContentType="none"
-          autoComplete="off"
-          style={{ flex: 1, color: textColor, fontSize: 16 }}
-          value={quantity.toString()}
-          onChangeText={setQuantity}
-          keyboardType="numeric"
-        />
-      </ThemedView>
+    <View style={styles.container}>
       <TouchableOpacity
         style={[styles.button, { backgroundColor }]}
         onPress={handleDecrease}
       >
         <Feather name="minus" size={18} color={iconColor} />
       </TouchableOpacity>
+      <ThemedView
+        backgroundColor="background.1"
+        borderColor="background.2"
+        style={styles.input}
+      >
+        <TextInput
+          placeholder="quant."
+          autoCorrect={false}
+          autoCapitalize="none"
+          textContentType="none"
+          autoComplete="off"
+          style={{
+            flex: 1,
+            color: textColor,
+            fontSize: 16,
+            textAlign: "center",
+          }}
+          value={String(quantity)}
+          onChangeText={handleChangeText}
+          keyboardType="numeric"
+        />
+      </ThemedView>
       <TouchableOpacity
         style={[styles.button, { backgroundColor }]}
         onPress={handleIncrease}
@@ -65,7 +74,7 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
 };
 
 const styles = StyleSheet.create({
-  constainer: {
+  container: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -74,20 +83,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    width: 100,
+    width: 60,
     borderRadius: 10,
     height: 42,
     paddingHorizontal: 8,
   },
   button: {
-    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 8,
     width: 42,
     height: 42,
     borderRadius: 100,
-    paddingHorizontal: 8,
     backgroundColor: "#5B5B5B",
   },
 });

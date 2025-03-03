@@ -1,11 +1,15 @@
-import { ListItem } from "@/components/ListItem";
+import { Product } from "@/components/ListItem";
 import { ListOptions } from "@/components/ListOptions";
 import { ProductEntry } from "@/components/ProductEntry";
 import { ThemedText } from "@/components/ThemedText";
 import { BackButton } from "@/components/ui/BackButton";
-import { List, useShoppingList } from "@/database/useShoppingList";
+import {
+  List,
+  Product as ProductType,
+  useShoppingList,
+} from "@/database/useShoppingList";
 import { Stack, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { LinearTransition } from "react-native-reanimated";
 
@@ -23,32 +27,16 @@ export default function ListView() {
     } catch (error) {
       console.error("Error fetching list:", error);
     }
-  }, [id, shoppingList]);
+  }, []);
 
-  const handleCheckProduct = useCallback(
-    async (productId: string, checked: boolean) => {
-      try {
-        await shoppingList.checkProduct({ id: productId, checked });
-        fetchList();
-      } catch (error) {
-        console.error("Error checking product:", error);
-      }
-    },
-    [fetchList, shoppingList]
+  const productList = useMemo(() => data?.products || [], [data?.products]);
+
+  const renderList = useCallback(
+    ({ item }: { item: ProductType }) => (
+      <Product {...item} invalidateList={fetchList} />
+    ),
+    []
   );
-
-  const handleDeleteProduct = useCallback(
-    async (productId: string) => {
-      try {
-        await shoppingList.deleteProduct(productId);
-        fetchList();
-      } catch (error) {
-        console.error("Error deleting product:", error);
-      }
-    },
-    [fetchList, shoppingList]
-  );
-
   useEffect(() => {
     fetchList();
   }, [fetchList]);
@@ -79,18 +67,12 @@ export default function ListView() {
         </View>
       </View>
       <Animated.FlatList
-        data={data?.products || []}
+        data={productList}
         keyExtractor={(item) => item.id}
         itemLayoutAnimation={LinearTransition}
-        renderItem={({ item }) => (
-          <ListItem
-            item={item}
-            onCheck={handleCheckProduct}
-            onDelete={handleDeleteProduct}
-          />
-        )}
+        renderItem={renderList}
       />
-      <ProductEntry listId={id} invalidList={fetchList} />
+      <ProductEntry listId={id} invalidList={fetchList} list={data} />
     </View>
   );
 }
